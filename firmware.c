@@ -1,5 +1,5 @@
 //pseudo code
-//should it send scancodes to bluefruit? or ascii? or what?
+//
 #include <avr/io.h>
 
 #define MOD_HELD        -1  // mod keys don't have chord timers
@@ -47,33 +47,43 @@
 #define S_SHIFT S_R_T3
 #define S_ESC   S_L_T3
 
-//#define IS_MOD(x) (x == S_ALT) || (x == S_CTRL) || (x == S_ESC) || (x == S_SHIFT)
 
-/* MOD EXPLANATION 
-Mods don't have chord timers. Their entries are set
-to MOD_HELD when pressed. 
+/* todo: should it send scancodes to bluefruit? or ascii? or what?
+ *         -mod strategy requires scancodes with up and down
+ * idea: reduce scan frequency if no keypresses detected for a while
+ * idea: only insert pairs of parens etc: ()<leftarrow>
+ *
+ */
 
-For ctrl and alt:
-  Send 'ctrl down' as soon as ctrl is pressed.
-  Send 'ctrl up' as soon as ctrl is released. (and same for alt)
 
-For esc: TODO
-  Should it behave like a normal keyboard?
-  Or can meta be made holdable/reuseable, like ctrl and alt?
+/* MOD KEY EXPLANATION 
+ * Mods don't have chord timers. Their entries are set
+ * to MOD_HELD when pressed. 
+ * 
+ * For ctrl and alt:
+ *   Send 'ctrl down' as soon as ctrl is pressed.
+ *   Send 'ctrl up' as soon as ctrl is released. (and same for alt)
+ * 
+ * For esc: TODO
+ *   Should it behave like a normal keyboard?
+ *   Or can meta be made holdable/reuseable, like ctrl and alt?
+ * 
+ * For shift: 
+ *   Set chord_timer[i] to MOD_HELD when pressed.
+ *   Use when translating matrix to key after some other chord timer runs out.
+ *   Don't send directly - shift pairs may not match dvorak's pairs.
+ *   Set chord_timer[i] to NOT_PRESSED when released.
+ */
 
-For shift: 
-  Set chord_timer[i] to MOD_HELD when pressed.
-  Use when translating matrix to key after some other chord timer runs out.
-  Don't send directly - shift pairs may not match dvorak's pairs.
-  Set chord_timer[i] to NOT_PRESSED when released.
-*/
 
-//state holds countdown until chord is registered (>= 0) or other state description (< 0)
+//chord_timers holds countdown until chord is registered (>= 0) or holds other state description (< 0)
+//Technically only needs to be 19 or 20 bytes, because some mods don't have stored states. But this way we
+//don't have to worry about array order vs scanning order.
 char chord_timers[22]; //signed char
 short repeat_delay_timer;
 short repeat_period_timer;
-bool is_any_switch_pressed;
-bool has_any_chord_timer_elapsed; //determined by interrupt handler, reset after sending
+bool is_any_switch_pressed;  //used by interrupt handler
+bool has_any_chord_timer_elapsed;  //determined by interrupt handler, reset after sending
 int standby_timer;
 char num_pressed;
 int switches_pressed; 
