@@ -12,6 +12,11 @@
 #define REPEAT_PERIOD  50
 #define STANDBY_DELAY  10000   //different units than other timers, long!
 
+//for flag_send_ctrl and flag_send_alt
+#define SEND_NOTHING   0
+#define SEND_DOWN      1
+#define SEND_UP        2
+
 #define  S_L_T1 0
 #define  S_L_T2 1
 #define  S_L_T3 2
@@ -42,34 +47,25 @@
 #define S_SHIFT S_R_T3
 #define S_ESC   S_L_T3
 
-#define IS_MOD(x) (x == S_ALT) || (x == S_CTRL) || (x == S_ESC) || (x == S_SHIFT)
+//#define IS_MOD(x) (x == S_ALT) || (x == S_CTRL) || (x == S_ESC) || (x == S_SHIFT)
 
 /* MOD EXPLANATION 
 Mods don't have chord timers. Their entries are set
 to MOD_HELD when pressed. 
 
-******** When a normal switch's chord timer runs out...
-*** while ctrl is held: 
+For ctrl and alt:
+  Send 'ctrl down' as soon as ctrl is pressed.
+  Send 'ctrl up' as soon as ctrl is released. (and same for alt)
 
-send 'ctrl down', 'normal key down', 'normal key up'. 
-Then whenever ctrl is released, send 'ctrl up' immediately. This
-should make emacs shortcuts like 'ctrl+x+s' and 'ctrl+x s' work
-properly.
+For esc: TODO
+  Should it behave like a normal keyboard?
+  Or can meta be made holdable/reuseable, like ctrl and alt?
 
-
-*** while alt is held:
-send 'alt down', 'normal key down', 'normal key up', 'alt up'
-
-
-*** while shift is held:
-Use shift to determine normal key - shifted pairs may not match dvorak's pairs.
-Send 'normal key down', 'normal key up'.
-Should never need to send shift directly.
-
-*** while esc is held:
-TODO. is esc / meta weird? should it behave the same way as a typical
-keyboard, or can I make meta holdable/reuseable
-?
+For shift: 
+  Set chord_timer[i] to MOD_HELD when pressed.
+  Use when translating matrix to key after some other chord timer runs out.
+  Don't send directly - shift pairs may not match dvorak's pairs.
+  Set chord_timer[i] to NOT_PRESSED when released.
 */
 
 //state holds countdown until chord is registered (>= 0) or other state description (< 0)
@@ -77,10 +73,26 @@ char chord_timers[22]; //signed char
 short repeat_delay_timer;
 short repeat_period_timer;
 bool is_any_switch_pressed;
-bool has_any_chord_timer_elapsed;
+bool has_any_chord_timer_elapsed; //determined by interrupt handler, reset after sending
 int standby_timer;
 char num_pressed;
 int switches_pressed; 
+char flag_ctrl; //set by scanMatrix, then handled after scan is complete
+char flag_alt;
+
+int main(){
+  setup();
+  
+  while(1){
+    scanMatrix();
+    send_ctrl_alt();
+    if(has_any_chord_timer_elapsed){
+      process(); //translate switches to keys
+    }
+    //sleep briefly?
+  }
+  return 1;
+}
 
 int setup(){
 
@@ -88,7 +100,9 @@ int setup(){
   repeat_period_timer = REPEAT_PERIOD;
   is_any_switch_pressed = 0;
   has_any_chord_timer_elapsed = 0;
-
+  flag_ctrl = SEND_NOTHING;
+  flag_alt = SEND_NOTHING;
+  
   //initialization might be unnecessary, depending on program flow / interrupts handlers?
   for (int i=0; i<22; i++){
     chord_timers[i]=NOT_PRESSED;
@@ -103,6 +117,99 @@ int setup(){
   return 0;
 }
 
+
+/* translate switches to keys: TODO HOW? */
+void process(){
+  construct state; //binary representation of pressed switches
+  //  check state against DEFINE list or enum;
+  if (state == normal key, and no previous mods){
+    send(key);
+    for(s = pressed switches){
+      chord_timers[s]=ALREADY_SENT;
+    }
+  }
+  //ctrl sequences should only send when ctrl is released
+  if (state == mod only){
+    
+  }
+}
+
+
+/* update global chord_timers array */
+void scanMatrix(){
+  char i = 0;
+  for (each hand){
+    for(each row){
+      set row pin low;
+      //note: might need a nop between write and read, see p57
+      for (each column){
+	val = read from column pin;
+	//NEWLY PRESSED
+	if( val == LOW && chord_timers[i] == NOT_PRESSED){
+	  if( i == S_CTRL ){
+	    flag_ctrl = SEND_DOWN;
+	  }
+	  else if( i == S_ALT ){
+	    flag_alt = SEND_DOWN;
+	  }
+	  else if( i == S_ESC ){
+	    //TODO
+	  }
+	  else if( i == S_SHIFT ){
+	    //has no timer
+	    chord_timers[i] == MOD_HELD;
+	  }
+	  else{
+	    //reset chord timer
+	    chord_timers[i] == CHORD_DELAY;
+	  }
+	  //reset delay timers
+	  repeat_delay_timer = REPEAT_DELAY;
+	  repeat_period_timer = REPEAT_PERIOD;
+	}
+	//NEWLY RELEASED
+	else if( val == HIGH && chord_timers[i] >= ALREADY_SENT){
+	  if( i == S_CTRL ){
+	    flag_ctrl = SEND_UP;
+	  }
+	  else if( i == S_ALT ){
+	    flag_alt = SEND_UP;
+	  }
+	  else if( i == S_ESC ){
+	    //TODO 
+	  }
+	  else{
+	    chord_timers[i] = NOT_PRESSED;
+	  }
+	  //reset repeat timers
+	  repeat_delay_timer = REPEAT_DELAY;
+	  repeat_period_timer = REPEAT_PERIOD;
+	}
+	i++;
+      }
+      set row pin hi-z;           //(not hi, to save power?)
+    }
+  }
+  
+}
+
+
+/* would have done this within scanMatrix(), but maybe sending would
+   take a while and mess up scan timing */
+void send_ctrl_alt(){
+  if (flag_ctrl == SEND_UP){
+    //todo send ctrl up
+  }
+  else if (flag_ctrl == SEND_DOWN){
+    //todo
+  }
+  if (flag_alt == SEND_UP){
+    //todo send alt up
+  }
+  else if (flag_alt == SEND_DOWN){
+    //todo
+  }
+}
 
 /* decrement timers */
 void interrupt_handler_1ms(){
@@ -142,70 +249,3 @@ void interrupt_handler_LONG(){
     standby_timer--;
   }
 }
-
-int loop(){
-  scanMatrix();
-  if(has_any_chord_timer_elapsed){
-    process();
-  }
-  //sleep briefly?
-}
-
-
-/* update global chord_timers array */
-void scanMatrix(){
-  char i = 0;
-  for (each hand){
-    for(each row){
-      set row pin low;
-      //note: might need a nop between write and read, see p57
-      for (each column){
-	val = read from column pin;
-	if( val == LOW && chord_timers[i] == NOT_PRESSED){
-	  //newly pressed
-	  if( IS_MOD(i) ){
-	    //has no timer
-	    chord_timers[i] == MOD_HELD;
-	  }
-	  else{
-	    //reset chord timer
-	    chord_timers[i] == CHORD_DELAY;
-	  }
-	  //reset delay timers
-	  repeat_delay_timer = REPEAT_DELAY;
-	  repeat_period_timer = REPEAT_PERIOD;
-	}
-	else if( val == HIGH && chord_timers[i] >= ALREADY_SENT){
-	  //newly released, reset repeat timers
-	  chord_timers[i] = NOT_PRESSED;
-	  if(i == S_CTRL){
-	    send_ctrl_released(); //or use general function, whatever
-	  }
-	  repeat_delay_timer = REPEAT_DELAY;
-	  repeat_period_timer = REPEAT_PERIOD;
-	}
-	i++;
-      }
-      set row pin hi-z;           //(not hi, to save power?)
-    }
-  }
-  
-}
-
-
-void process(){
-  construct state; //binary representation of pressed switches
-  //  check state against DEFINE list or enum;
-  if (state == normal key, and no previous mods){
-    send(key);
-    for(s = pressed switches){
-      chord_timers[s]=ALREADY_SENT;
-    }
-  }
-  //ctrl sequences should only send when ctrl is released
-  if (state == mod only){
-    
-  }
-}
-
-
