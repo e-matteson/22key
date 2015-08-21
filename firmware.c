@@ -47,7 +47,6 @@
 #define S_SHIFT S_R_T3
 #define S_ESC   S_L_T3
 
-
 /* todo: should it send scancodes to bluefruit? or ascii? or what?
  *         -mod strategy requires scancodes with up and down
  * idea: reduce scan frequency if no keypresses detected for a while
@@ -56,29 +55,11 @@
  */
 
 
-/* MOD KEY EXPLANATION 
- * Mods don't have chord timers. Their entries are set
- * to MOD_HELD when pressed. 
- * 
- * For ctrl and alt:
- *   Send 'ctrl down' as soon as ctrl is pressed.
- *   Send 'ctrl up' as soon as ctrl is released. (and same for alt)
- * 
- * For esc: TODO
- *   Should it behave like a normal keyboard?
- *   Or can meta be made holdable/reuseable, like ctrl and alt?
- * 
- * For shift: 
- *   Set chord_timer[i] to MOD_HELD when pressed.
- *   Use when translating matrix to key after some other chord timer runs out.
- *   Don't send directly - shift pairs may not match dvorak's pairs.
- *   Set chord_timer[i] to NOT_PRESSED when released.
- */
 
-
-//chord_timers holds countdown until chord is registered (>= 0) or holds other state description (< 0)
-//Technically only needs to be 19 or 20 bytes, because some mods don't have stored states. But this way we
-//don't have to worry about array order vs scanning order.
+//chord_timers holds countdown until chord is registered (>= 0) or
+//holds other state description (< 0). Technically only needs to be 19
+//or 20 bytes, because some mods don't have stored states. But this
+//way we don't have to worry about array order vs scanning order.
 char chord_timers[22]; //signed char
 short repeat_delay_timer;
 short repeat_period_timer;
