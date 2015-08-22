@@ -5,6 +5,22 @@ Firmware for an attiny2313a in a 22 key chording keyboard.
 Unfinished.
 
 
+## NEW IDEAS
+
+Don't need a chord timer for each key, just one that restarts whenever the first key is newly pressed or released after a send. When that timer runs out, the current state is sent.
+
+Might want different delays for after press and after release. And we need to remember which (press/release) happened last, because...
+
+Keys that are quickly pressed and released before the press-timer runs out should be sent. hmm.
+* When press timer is > 0: if any key released, send last state from before the release
+* When release timer is > 0: if any key pressed, restart as press timer
+
+if (old ^ new) changed
+if ((old ^ new) & new) something pressed, else nothing pressed
+if ((old ^ new) & old) something released, else nothing released
+
+one signed char for timer, seperate reset constants, flag for last pressed or released
+what if both pressed and released in one scan? treat as just a press
 
 ## MOD KEY EXPLANATION
 
