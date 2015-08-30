@@ -5,11 +5,10 @@ import re
 import pprint
 from collections import Counter
 
-DELIMITER = " :: " #for frequency file
-
 def get_log(filename):
     f=open(filename, "r")
     log=f.read()
+    f.close()
     #remove logging start/stop timestamp messages and surrounding newlogs
     log=re.sub("\n+Logging [(started)(stopped)]+ at [-0-9 :]+(> \n\n)?", "x", log)
     log =re.sub("\n", "<Ret>", log)
@@ -21,7 +20,6 @@ def get_log(filename):
     log = re.findall(r"(<[A-Za-z#]+>|[^\240\x00\304\212])",log)
     return log
 
-
 def print_table(freq):
     print '______________________'
     for line in freq:
@@ -32,8 +30,7 @@ def print_table(freq):
 def count_freq(log, num):
     l = []
     for i in range(len(log)-num-1):
-        l.append(tuple(log[i:i+num]))
-    
+        l.append(tuple(log[i:i+num]))    
     return Counter(l).most_common()
 
 def filter(freq, set_list):
@@ -46,7 +43,7 @@ def main():
 
     log=get_log("/var/log/logkeys.log")
     corpus=get_log("corpus.txt")
-    log = log+corpus
+    log = corpus
     
     # log = ['a','b','c','d','a','a','b']
 
@@ -69,13 +66,13 @@ def main():
 
     # print_table(filter(freq1, [alphas]))
     # print_table(filter(freq1, [mods]))
-    print_table(filter(freq1, [full]))
+    # print_table(filter(freq1, [full]))
 
 
     # print_table(filter(freq2, [full, repeat]))
 
       
-    # print_table(filter(freq4, [alphas, alphas, alphas, alphas]))
+    print_table(filter(freq4, [alphas, alphas, alphas, alphas]))
     # print_table(filter(freq4, [full, full, full, full]))
     # print_table(filter(freq4, [len1, len1, len1, len1]))
  
