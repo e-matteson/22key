@@ -97,3 +97,28 @@ Problem: array is huge and sparse. worst case is char[2^22], no go.
 
 USB-HID spec has requirements this probably won't meet, especially for boot keyboards.
 I want to use bluefruit for Tx only...
+
+
+
+## Layout Optimization
+
+1. make list of usable chords
+2. pick layout metrics
+3. use simulated annealing to determine best mapping between chords and characters
+
+### Metric
+
+Prefer:
+* min number of switches 
+* min number switch changes between common digrams/trigrams
+* index/middle over pinky/ring
+* consecutive finger runs - same row, or monotonic
+* balanced hand use - sustained switches, or new presses
+
+
+remove shifts and holds from corpus? all to lowercase
+
+how to deal with physical shift:
+* upper/lower case letters have to stay together
+* but if others aren't restricted... how to handle swaps?
+** pick two chords to swap. if either is in locked_pairs, swap both shifted and unshifted. else, randomly pick one of those to swap.
