@@ -98,6 +98,15 @@ Problem: array is huge and sparse. worst case is char[2^22], no go.
 USB-HID spec has requirements this probably won't meet, especially for boot keyboards.
 I want to use bluefruit for Tx only...
 
+Key numbering in original mapper.py:
+#     21 20 19 18         17 16 15 14
+#     13 12 11 10         9  8  7  6
+#           5  4  3    2  1  0
+
+Key numbering in optimizer:
+#     7  5  3  1          9  11 13 15
+#     6  4  2  0          8  10 12 14           
+#           18 17 16   19 20 21
 
 
 ## Layout Optimization
@@ -122,3 +131,5 @@ how to deal with physical shift:
 * upper/lower case letters have to stay together
 * but if others aren't restricted... how to handle swaps?
 ** pick two chords to swap. if either is in locked_pairs, swap both shifted and unshifted. else, randomly pick one of those to swap.
+
+### 

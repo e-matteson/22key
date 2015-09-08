@@ -63,15 +63,12 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
                 cost += (len(chord)+shifted) * freq1_dict[(layout[chord][shifted],)] *1
             except KeyError:
                 warn("Character not found in corpus: %s" % layout[chord][shifted])
-
-        
-        # TODO strong weak
         
         for switch in chord:
             # check hand balance of individual characters
-            if switch in categories["right"]:
+            if is_right(switch):
                 num_right += 1.0/len(chords)
-            if switch in categories["weak"]:
+            if is_weak(switch):
                 cost += freq1_dict[(layout[chord][0],)] * 1
                 
     cost += abs(num_right - 0.5) *1
@@ -177,23 +174,6 @@ def main():
     return (freq1, freq3)
  
 
-def filter_presses(press_list, categories, truth):
-    """ press_list is 2-dim list """
-    new_list = press_list
-    for i in range(len(categories)):
-        category = categories[i]
-        if category == "bottom_row":
-            l = range(6,14)
-        elif category == "right_hand":
-            l = range(6,10) + range(14,18)
-        elif category == "strong_fingers":
-            l = range(8,12) + range(16,20)
-        else:
-            print "filter_presses: unknown category"
-            exit(1)
-        func = lambda y: y in l    
-        press_list = [[x for x in y if not(func(x) ^ truth[i])] for y in press_list]      
-    return press_list
 
 def is_top(switch):
     """ return true if switch is in a top row """
@@ -236,43 +216,17 @@ def does_finger_repeat(pressed):
     foo= [sorted([x,y]) for x in pressed[0] for y in pressed[1]]
     return bool([1 for x in foo if (x[0]%2 == 0) and (x[1] == x[0]+1)])
 
-    
+def is_weak(switch):
+    return switch in range(4,8)+range(12,16)
+
 # chord_seq=[[13], [6, 7], [7, 8], [7, 12, 13], [10, 12]]
 # chord_seq=[[0], [8, 10], [8, 11], [8, 2, 4], [8, 6, 0]]
-chord_seq=[[15,7], [7], [2,4],[11, 13],[12]]
-# , [8, 2, 4], [8, 6, 0]]
-print chord_seq
+# chord_seq=[[15,7], [7], [2,4],[11, 13],[12]]
 
 # new map for easier row/hand checking
 #     7  5  3  1          9  11 13 15
 #     6  4  2  0          8  10 12 14           
 #           18 17 16   19 20 21
-    
-# filter for one hand/row, full version (all switches in each chord)
-# r = [[x for x in transition if is_top(x) and not is_left(x)] for transition in pressed]
-
-# filter for one hand/row, quick version (first switch in each chord only)
-# assumes all chords are one-handed and use only consecutive, same-row switches
-# rt = [x[0] for x in pressed if is_top(x[0]) and not is_left(x[0])]
-
-# print [[y-x for x in r[i] for y in r[i+1]] for i in range(len(r)-1)]
-
-
-
-# foo = filter_presses(pressed, ["right_hand", "bottom_row", "strong_fingers"], [False, True, True])
-# right = filter_presses(pressed, ["right_hand"], [True])
-right_rows = [[is_top(x) for x in transition if (not is_left(x))] for transition in pressed]
-changes = 0
-for transition in right_rows:
-    topright = [[is_top(x) for x in transition if (not is_left(x))] for transition in pressed]
-# print x
-
-
-
-print
-# print pressed
-# print [[x in categories["right"] for x in chord] for chord in pressed]
-# print cost
 
 # for each newly pressed key, elif:
 # * no key released                              -> 0  
@@ -300,15 +254,18 @@ locked_pairs = [["a", "A"], ["b", "B"], ["c", "C"], ["d", "D"], ["e", "E"], ["f"
                 ["s", "S"], ["t", "T"], ["u", "U"], ["v", "V"], ["w", "W"], ["x", "X"],
                 ["y", "Y"], ["z", "Z"]]
 
-#     21 20 19 18         17 16 15 14
-#     13 12 11 10         9  8  7  6
-#           5  4  3    2  1  0
+#     7  5  3  1          9  11 13 15
+#     6  4  2  0          8  10 12 14           
+#           18 17 16   19 20 21
 
 # order matters! doesn't include shifted chords, or any thumb switches
 # all singles
-chords = [[x] for x in range(6,22)]
+chords = range(0,16)
 # all consecutive one-hand doubles
-chords += [[chords[i], chords[i+1]] for i in range(len(chords)-1)]
+chords += [[chords[i], chords[i+1]] for i in range(0,16) if (i != 7)]
+print chords
+exit()
+chords += [[chords[i], chords[i+1]] for i in range(8,16)]
 # all two-hand doubles
 for x in range(10,14)+range(18,22):
     for y in range(6,10)+range(14,18):
