@@ -79,7 +79,16 @@ def make_reverse_layout(layout):
             reverse[character] = chord
     return reverse
 
-def make_chord_list():
+def get_constants():
+    all_keys = ["a", "A", "b", "B", "c", "C", "d", "D", "e", "E", "f", "F", "g", "G", "h", "H", "i", "I", "j", "J", "k", "K", "l", "L", "m", "M", "n", "N", "o", "O", "p", "P", "q", "Q", "r", "R", "s", "S", "t", "T", "u", "U", "v", "V", "w", "W", "x", "X", "y", "Y", "z", "Z", "<del>", "<tab>",  "<cpslk>", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "<home>", "<pgup>", "<end>", "<pgdn>", "<right>", "<left>", "<down>", "<up>", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "@", "#", "$", "%", "^", "&", "*", "-", "_", "=", "+", "\\",  "|", ";",  ":",  "\'", '\"',  r"`", "~", ",", "<", ".", ">", r"/", "?", "[", "{", "(" ]
+
+    locked_pairs = [["a", "A"], ["b", "B"], ["c", "C"], ["d", "D"], ["e", "E"], ["f", "F"],
+                ["g", "G"], ["h", "H"], ["i", "I"], ["j", "J"], ["k", "K"], ["l", "L"],
+                ["m", "M"], ["n", "N"], ["o", "O"], ["p", "P"], ["q", "Q"], ["r", "R"],
+                ["s", "S"], ["t", "T"], ["u", "U"], ["v", "V"], ["w", "W"], ["x", "X"],
+                ["y", "Y"], ["z", "Z"]]
+
+
     # this is messy and fragile but constructs the list of chords i want to use
     # some cost checks will break if any non-consecutive single-hand chords are used
     chords = [[x] for x in range(0,16)]
@@ -87,7 +96,9 @@ def make_chord_list():
     chords += [[chords[i][0], chords[i+1][0]] for i in range(0,15) if (i != 7)]
     # all two-hand doubles
     chords.extend([[x,y] for x in range(8) for y in range(8,16)])
-    return chords
+
+    
+    return (chords, all_keys, locked_pairs)
 
 
 def is_top(switch):
@@ -150,6 +161,7 @@ def swap(layout_bar, locked_pairs, num_to_swap):
 def calculate_cost(layout_baz, freq1_dict, freq3_dict, weight):
     cost = 0
     num_right = 0
+    num_left = 0
     chords = layout_baz.keys()
     
     # single char metrics
@@ -160,18 +172,21 @@ def calculate_cost(layout_baz, freq1_dict, freq3_dict, weight):
                 cost += (len(chord)+shifted) * freq1_dict[(layout_baz[chord][shifted],)] * weight.num_switches
             except KeyError:
                 warn("Character not found in corpus: %s" % layout_baz[chord][shifted])
-        
+                
+        total_freq = freq1_dict[(layout_baz[chord][0],)] + freq1_dict[(layout_baz[chord][1],)]
         for switch in chord:
             # check hand balance of individual characters
             if is_right(switch):
-                num_right += 1.0/len(chords)
+                num_right += total_freq
+            else:
+                num_left += total_freq
             if is_weak(switch):
-                # print
-                # print switch
-                # print "WEAK"
-                # print 
-                cost += (freq1_dict[(layout_baz[chord][0],)] + freq1_dict[(layout_baz[chord][1],)]) * weight.weak_finger 
-
+                cost +=  total_freq * weight.weak_finger
+                
+    print "\nhand"
+    print num_right
+    print num_left
+    print 
     cost += abs(num_right - 0.5) * weight.hand_balance
     # multiple char metrics
     chord_lookup = make_reverse_layout(layout_baz)
@@ -223,33 +238,15 @@ def optimize(initial_layout, freq1, freq3, weight, p, locked_pairs, iterations):
     return layout
 
 
-# chord_seq=[[13], [6, 7], [7, 8], [7, 12, 13], [10, 12]]
-# chord_seq=[[0], [8, 10], [8, 11], [8, 2, 4], [8, 6, 0]]
-# chord_seq=[[15,7], [7], [2,4],[11, 13],[12]]
-
 # new map for easier row/hand checking
 #     7  5  3  1          9  11 13 15
 #     6  4  2  0          8  10 12 14           
 #           18 17 16   19 20 21
 
-
-all_keys = ["a", "A", "b", "B", "c", "C", "d", "D", "e", "E", "f", "F", "g", "G", "h", "H", "i", "I", "j", "J", "k", "K", "l", "L", "m", "M", "n", "N", "o", "O", "p", "P", "q", "Q", "r", "R", "s", "S", "t", "T", "u", "U", "v", "V", "w", "W", "x", "X", "y", "Y", "z", "Z", "<del>", "<tab>",  "<cpslk>", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "<home>", "<pgup>", "<end>", "<pgdn>", "<right>", "<left>", "<down>", "<up>", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "@", "#", "$", "%", "^", "&", "*", "-", "_", "=", "+", "\\",  "|", ";",  ":",  "\'", '\"',  r"`", "~", ",", "<", ".", ">", r"/", "?", "[", "{", "(" ]
-
-locked_pairs = [["a", "A"], ["b", "B"], ["c", "C"], ["d", "D"], ["e", "E"], ["f", "F"],
-                ["g", "G"], ["h", "H"], ["i", "I"], ["j", "J"], ["k", "K"], ["l", "L"],
-                ["m", "M"], ["n", "N"], ["o", "O"], ["p", "P"], ["q", "Q"], ["r", "R"],
-                ["s", "S"], ["t", "T"], ["u", "U"], ["v", "V"], ["w", "W"], ["x", "X"],
-                ["y", "Y"], ["z", "Z"]]
-
-
-# order matters! doesn't include shifted chords, or any thumb switches
-# all singles
-    
-
-chords = make_chord_list()            
+(chords, all_keys, locked_pairs) = get_constants()            
 Weight = namedtuple("Weight", "num_switches, weak_finger, hand_balance, num_switch_changes, finger_reused, direction_change, row_change")
 
-w = Weight(num_switches=0, weak_finger=10, hand_balance=0, num_switch_changes=0, finger_reused=0, direction_change=0, row_change=0)
+w = Weight(num_switches=0, weak_finger=0, hand_balance=10, num_switch_changes=0, finger_reused=0, direction_change=0, row_change=0)
 
 #     7  5  3  1          9  11 13 15
 #     6  4  2  0          8  10 12 14           
@@ -257,16 +254,17 @@ w = Weight(num_switches=0, weak_finger=10, hand_balance=0, num_switch_changes=0,
 
 (freq1, freq3) = get_corpus("AzAEBcBcBcccEdEdEdEdddEEEEEEEEEEEEEE")
 
-bad  = {(6,4):["z","E"], (12,):["A","c"],  (0,8):["B", "d"]}
-good = {(6,4):["z","d"], (12,):["A","c"],  (0,8):["B", "E"]}
+bad  = {(0,):["d","E"], (12,):["A","z"],  (2,):["B", "c"]}
+good  = {(0,):["d","c"], (12,):["A","z"],  (2,):["E", "B"]}
+# good = {(6,4):["z","d"], (12,):["A","c"],  (0,8):["B", "E"]}
 
 # print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
 # print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
 # {(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}
 print optimize(bad, freq1, freq3, w, 0, locked_pairs, 50)
 
-print calculate_cost(bad, freq1, freq3, w)
-print calculate_cost(good, freq1, freq3, w)
+# print calculate_cost(bad, freq1, freq3, w)
+# print calculate_cost(good, freq1, freq3, w)
 
 
 # print_table(freq1)
