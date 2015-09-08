@@ -87,15 +87,17 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
         #for now, weight both transitions in the triad equally
         cost += sum(num_changed_list) * freq3_dict[triad] *1
 
-        print
-        print triad
-        print chord_seq
-        #get flat length, total number of switches
-        print len([switch for chord in chord_seq for switch in chord])
+        # list of keys newly pressed for each chord
+        pressed = [chord_seq[0]] + [list(set(chord_seq[i+1]) - set(chord_seq[i])) for i in range(len(chord_seq)-1)]
+        # remove empty sub-lists (transitions with only releases)
+        pressed = [x for x in pressed if x]
+        cost += does_finger_repeat(pressed) * freq3_dict[triad] *1
         
-        print 
-        #TODO something with triads
-        # print "foo"
+        for hand_func in [is_left, is_right]:
+            one_hand_pressed = [x[0] for x in pressed if hand_func(x[0])]
+            cost += is_direction_monotonic(one_hand_pressed) * freq3_dict[triad] *1
+            cost += num_row_changes(one_hand_pressed) * freq3_dict[triad] *1
+            
     return cost
 
 
@@ -197,13 +199,47 @@ def is_top(switch):
     """ return true if switch is in a top row """
     return bool(switch % 2)
 
+def is_bottom(switch):
+    """ return true if switch is in a bottom row """
+    return not is_top(switch)
+
 def is_left(switch):
     """ return true if switch is under left hand """
     return switch <= 7
 
+def is_right(switch):
+    """ return true if switch is under right hand """
+    return 8 <= switch <= 15
+
+# def is_direction_monotonic(l): #todo test
+#     """ l is list of first switch in each chord of an n-gram, filtered for one hand/row only"""
+#     out = True
+#     for func_row in [is_top, is_bottom]:
+#         row = [x for x in l if func_row(x)] 
+#         directions = [0 < (row[i+1]-row[i]) for i in range(len(row)-1)]
+#         out = out and (directions.count(True)==0 or directions.count(False)==0)
+#     return out
+
+def is_direction_monotonic(left_right_list): #todo test
+    """ left_right_list is list of first switch in each chord of an n-gram, filtered for one hand/row only"""
+    # this version considers both rows - so it accepts some 'same finger, diff row' transitions as monotonic
+    directions = [0 < (left_right_list[i+1]-left_right_list[i]) for i in range(len(left_right_list)-1)]
+    return directions.count(True)==0 or directions.count(False)==0
+
+def num_row_changes(left_right_list):
+    """ left_right_list is list of first switch in each chord of an n-gram, filtered for one hand/row only."""
+    return sum([abs(left_right_list[i+1]%2 - left_right_list[i]%2) for i in range(len(left_right_list)-1)])
+
+def does_finger_repeat(pressed):
+    """ Checks for 'same finger / diff row' transition, only between first two elements of pressed.
+    So, only between first two chords of n-gram."""
+    foo= [sorted([x,y]) for x in pressed[0] for y in pressed[1]]
+    return bool([1 for x in foo if (x[0]%2 == 0) and (x[1] == x[0]+1)])
+
+    
 # chord_seq=[[13], [6, 7], [7, 8], [7, 12, 13], [10, 12]]
 # chord_seq=[[0], [8, 10], [8, 11], [8, 2, 4], [8, 6, 0]]
-chord_seq=[[2], [9, 11], [11,13],[13, 15],[13]]
+chord_seq=[[15,7], [7], [2,4],[11, 13],[12]]
 # , [8, 2, 4], [8, 6, 0]]
 print chord_seq
 
@@ -211,40 +247,19 @@ print chord_seq
 #     7  5  3  1          9  11 13 15
 #     6  4  2  0          8  10 12 14           
 #           18 17 16   19 20 21
+    
+# filter for one hand/row, full version (all switches in each chord)
+# r = [[x for x in transition if is_top(x) and not is_left(x)] for transition in pressed]
 
-# print [len(chord_seq[i]+chord_seq[i+1]) - len(set(chord_seq[i]+chord_seq[i+1])) for i in range(len(chord_seq)-1)])
-# print [set(chord_seq[i+1]) ^ set(chord_seq[i]) for i in range(len(chord_seq)-1)]
-cost = 0
-pressed = []
-released = []
-last_no_right = -1
-last_no_left = -1
-# todo back to list comp
-    # released += [list(set(chord_seq[i])   - set(chord_seq[i+1]))]
-pressed = [list(set(chord_seq[i+1]) - set(chord_seq[i])) for i in range(len(chord_seq)-1)]
-# remove empty sub-lists (transitions with only releases)
-pressed = [x for x in pressed if x]
-    # if [x in categories["right"] for x in pressed:
-    # cost += sum([len(x) for x in pressed]) * freq...
-    
-print pressed
-    # print i
-    # print r[i]
-    # print [y-x for x in r[i] for y in r[i+1]]
-    
-# get positive or negative step distance for one hand/row
-r = [[x for x in transition if is_top(x) and not is_left(x)] for transition in pressed]
+# filter for one hand/row, quick version (first switch in each chord only)
+# assumes all chords are one-handed and use only consecutive, same-row switches
+# rt = [x[0] for x in pressed if is_top(x[0]) and not is_left(x[0])]
+
 # print [[y-x for x in r[i] for y in r[i+1]] for i in range(len(r)-1)]
 
-# assume all single hand chords are consecutive switches, simpler direction test:
-foo = [0 < (r[i+1][0]-r[i][0]) for i in range(len(r)-1)]
-print foo
-if foo.count(True) and foo.count(False):
-    # non-monotonic finger direction
-    print "poly"
-else:
-    print "mono"
-    # foo = filter_presses(pressed, ["right_hand", "bottom_row", "strong_fingers"], [False, True, True])
+
+
+# foo = filter_presses(pressed, ["right_hand", "bottom_row", "strong_fingers"], [False, True, True])
 # right = filter_presses(pressed, ["right_hand"], [True])
 right_rows = [[is_top(x) for x in transition if (not is_left(x))] for transition in pressed]
 changes = 0
@@ -276,7 +291,6 @@ print
 # * dir: non-monotonic         -> 3
 # * dir: non-monotonic         -> 3
 
-exit()
 
 all_keys = ["a", "A", "b", "B", "c", "C", "d", "D", "e", "E", "f", "F", "g", "G", "h", "H", "i", "I", "j", "J", "k", "K", "l", "L", "m", "M", "n", "N", "o", "O", "p", "P", "q", "Q", "r", "R", "s", "S", "t", "T", "u", "U", "v", "V", "w", "W", "x", "X", "y", "Y", "z", "Z", "<del>", "<tab>",  "<cpslk>", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "<home>", "<pgup>", "<end>", "<pgdn>", "<right>", "<left>", "<down>", "<up>", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "@", "#", "$", "%", "^", "&", "*", "-", "_", "=", "+", "\\",  "|", ";",  ":",  "\'", '\"',  r"`", "~", ",", "<", ".", ">", r"/", "?", "[", "{", "(" ]
 
