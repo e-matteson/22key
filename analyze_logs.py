@@ -216,15 +216,15 @@ def optimize(initial_layout, freq1, freq3, weight, p, locked_pairs, iterations):
     print cost
         
     for i in range(iterations):
-        print 
-        print "iter %d:" % (i,)
+        # print 
+        # print "iter %d:" % (i,)
         new_layout = swap(layout, locked_pairs, 2)
         new_cost = calculate_cost(new_layout, freq1, freq3, weight)
-        print new_layout
-        print new_cost
+        # print new_layout
+        # print new_cost
 
         if (new_cost <= cost) or (random.random() < p):
-            print "accepted!"
+            # print "accepted!"
             layout = deepcopy(new_layout)
             cost = new_cost
     print "done"
@@ -246,9 +246,9 @@ w = Weight(num_switches=0, weak_finger=0, hand_balance=0, num_switch_changes=0, 
 #           18 17 16   19 20 21
 (freq1, freq3) = get_corpus("AzAEBcBcBEdcEdcEdcEdcEdcEdcEdcEdcEEEEEEEEEE")
 # locked_pairs = [["d","c"], ["E","B"]]
-locked_pairs = [  ["E","A"]]
+locked_pairs = [["d","B"], ["c","z"],  ["E", "A"]]
 # bad  = {(0,):["d","E"], (12,):["A","z"],  (2,):["B", "c"]} # 
-bad  = {(9,):["d","B"], (13,):["c","z"],  (11):["E", "A"]}
+bad  = {(9,):["d","B"], (12,):["c","z"],  (10,):["E", "A"]}
 # good = {(6,4):["z","d"], (12,):["A","c"],  (0,8):["B", "E"]}
 
 # print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
