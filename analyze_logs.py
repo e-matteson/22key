@@ -147,7 +147,6 @@ def swap(layout_bar, locked_pairs, num_to_swap):
             layout_foo[chords[j]][j_shifted] = tmp
     return layout_foo
             
-
 def calculate_cost(layout_baz, freq1_dict, freq3_dict, weight):
     cost = 0
     num_right = 0
@@ -167,7 +166,11 @@ def calculate_cost(layout_baz, freq1_dict, freq3_dict, weight):
             if is_right(switch):
                 num_right += 1.0/len(chords)
             if is_weak(switch):
-                cost += freq1_dict[(layout_baz[chord][0],)] * weight.weak_finger 
+                # print
+                # print switch
+                # print "WEAK"
+                # print 
+                cost += (freq1_dict[(layout_baz[chord][0],)] + freq1_dict[(layout_baz[chord][1],)]) * weight.weak_finger 
 
     cost += abs(num_right - 0.5) * weight.hand_balance
     # multiple char metrics
@@ -246,19 +249,24 @@ locked_pairs = [["a", "A"], ["b", "B"], ["c", "C"], ["d", "D"], ["e", "E"], ["f"
 chords = make_chord_list()            
 Weight = namedtuple("Weight", "num_switches, weak_finger, hand_balance, num_switch_changes, finger_reused, direction_change, row_change")
 
-w = Weight(num_switches=10, weak_finger=0, hand_balance=0, num_switch_changes=0, finger_reused=0, direction_change=0, row_change=0)
+w = Weight(num_switches=0, weak_finger=10, hand_balance=0, num_switch_changes=0, finger_reused=0, direction_change=0, row_change=0)
 
 #     7  5  3  1          9  11 13 15
 #     6  4  2  0          8  10 12 14           
 #           18 17 16   19 20 21
 
-(freq1, freq3) = get_corpus("AzAEBcBcBcccEdEdEdEdddEEEEE")
-initial_layout = {(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}
-print calculate_cost({(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
-print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
-print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
+(freq1, freq3) = get_corpus("AzAEBcBcBcccEdEdEdEdddEEEEEEEEEEEEEE")
+
+bad  = {(6,4):["z","E"], (12,):["A","c"],  (0,8):["B", "d"]}
+good = {(6,4):["z","d"], (12,):["A","c"],  (0,8):["B", "E"]}
+
+# print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
+# print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
 # {(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}
-print optimize(initial_layout, freq1, freq3, w, 0, locked_pairs, 50)
+print optimize(bad, freq1, freq3, w, 0, locked_pairs, 50)
+
+print calculate_cost(bad, freq1, freq3, w)
+print calculate_cost(good, freq1, freq3, w)
 
 
 # print_table(freq1)
