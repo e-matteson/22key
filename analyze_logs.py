@@ -239,16 +239,16 @@ def optimize(initial_layout, freq1, freq3, weight, p, locked_pairs, iterations):
 (chords, all_keys, locked_pairs) = get_constants()            
 Weight = namedtuple("Weight", "num_switches, weak_finger, hand_balance, num_switch_changes, finger_reused, direction_change, row_change")
 
-w = Weight(num_switches=0, weak_finger=0, hand_balance=0, num_switch_changes=0, finger_reused=10, direction_change=0, row_change=0)
+w = Weight(num_switches=0, weak_finger=0, hand_balance=0, num_switch_changes=0, finger_reused=0, direction_change=10, row_change=0)
 
 #     7  5  3  1          9  11 13 15
 #     6  4  2  0          8  10 12 14           
 #           18 17 16   19 20 21
-(freq1, freq3) = get_corpus("AzAEBcBcBcccEdEdEdEdEdEdEEEEEEEEEEEE")
+(freq1, freq3) = get_corpus("AzAEBcBcBEdcEdcEdcEdcEdcEdcEdcEdcEEEEEEEEEE")
 # locked_pairs = [["d","c"], ["E","B"]]
 locked_pairs = [  ["E","A"]]
 # bad  = {(0,):["d","E"], (12,):["A","z"],  (2,):["B", "c"]} # 
-bad  = {(9,):["d","c"], (11,):["B","z"],  (8,10):["E", "A"]}
+bad  = {(9,):["d","B"], (13,):["c","z"],  (11):["E", "A"]}
 # good = {(6,4):["z","d"], (12,):["A","c"],  (0,8):["B", "E"]}
 
 # print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
