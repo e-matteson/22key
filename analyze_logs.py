@@ -7,7 +7,7 @@ from collections import Counter
 from collections import namedtuple
 import random 
 from warnings import warn
-
+from copy import deepcopy
 
 def get_log(filename):
     f=open(filename, "r")
@@ -128,52 +128,50 @@ def is_weak(switch):
     return switch in range(4,8)+range(12,16)
 
 
-def swap(layout, locked_pairs, num_to_swap):
-    chords = layout.keys()
+def swap(layout_bar, locked_pairs, num_to_swap):
+    layout_foo = deepcopy(layout_bar)
+    chords = layout_foo.keys()
     for n in range(num_to_swap):
         i = random.randrange(len(chords))
         j = random.randrange(len(chords))
-        if (layout[chords[i]] in locked_pairs) or (layout[chords[j]] in locked_pairs):
+        if (layout_foo[chords[i]] in locked_pairs) or (layout_foo[chords[j]] in locked_pairs):
             #todo copy bug?
-            tmp = layout[chords[i]]
-            layout[chords[i]] = layout[chords[j]]
-            layout[chords[j]] = tmp
+            tmp = layout_foo[chords[i]]
+            layout_foo[chords[i]] = layout_foo[chords[j]]
+            layout_foo[chords[j]] = tmp
         else:
             i_shifted = random.randrange(2)
             j_shifted = random.randrange(2)
-            tmp = layout[chords[i]][i_shifted]
-            layout[chords[i]][i_shifted] = layout[chords[j]][j_shifted]
-            layout[chords[j]][j_shifted] = tmp
-    return layout
+            tmp = layout_foo[chords[i]][i_shifted]
+            layout_foo[chords[i]][i_shifted] = layout_foo[chords[j]][j_shifted]
+            layout_foo[chords[j]][j_shifted] = tmp
+    return layout_foo
             
 
-def calculate_cost(layout, freq1_dict, freq3_dict, weight):
+def calculate_cost(layout_baz, freq1_dict, freq3_dict, weight):
     cost = 0
     num_right = 0
-    chords = layout.keys()
+    chords = layout_baz.keys()
     
     # single char metrics
     for chord in chords:
         # check number of switches
         for shifted in [0,1]:
             try:
-                cost += (len(chord)+shifted) * freq1_dict[(layout[chord][shifted],)] * weight.num_switches
+                cost += (len(chord)+shifted) * freq1_dict[(layout_baz[chord][shifted],)] * weight.num_switches
             except KeyError:
-                warn("Character not found in corpus: %s" % layout[chord][shifted])
+                warn("Character not found in corpus: %s" % layout_baz[chord][shifted])
         
         for switch in chord:
             # check hand balance of individual characters
             if is_right(switch):
                 num_right += 1.0/len(chords)
             if is_weak(switch):
-                cost += freq1_dict[(layout[chord][0],)] * weight.weak_finger 
-
-    return cost
-
+                cost += freq1_dict[(layout_baz[chord][0],)] * weight.weak_finger 
 
     cost += abs(num_right - 0.5) * weight.hand_balance
     # multiple char metrics
-    chord_lookup = make_reverse_layout(layout)
+    chord_lookup = make_reverse_layout(layout_baz)
     for triad in freq3_dict.keys():
         chord_seq = [chord_lookup[char] for char in triad]
         # get number of changed switches between consecutive pairs of chords
@@ -199,7 +197,7 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
         
 def optimize(initial_layout, freq1, freq3, weight, p, locked_pairs, iterations):
     cost = calculate_cost(initial_layout, freq1, freq3, weight)
-    layout = initial_layout.copy()
+    layout = deepcopy(initial_layout)
     print "initial:"
     print layout
     print cost
@@ -207,18 +205,17 @@ def optimize(initial_layout, freq1, freq3, weight, p, locked_pairs, iterations):
     for i in range(iterations):
         print 
         print "iter %d:" % (i,)
-        new_layout = swap(layout.copy(), locked_pairs, 2)
+        new_layout = swap(layout, locked_pairs, 2)
         new_cost = calculate_cost(new_layout, freq1, freq3, weight)
         print new_layout
         print new_cost
 
         if (new_cost <= cost) or (random.random() < p):
             print "accepted!"
-            layout = new_layout.copy()
+            layout = deepcopy(new_layout)
             cost = new_cost
             
     print "done"
-    # print layout
     print cost
     return layout
 
@@ -255,13 +252,13 @@ w = Weight(num_switches=10, weak_finger=0, hand_balance=0, num_switch_changes=0,
 #     6  4  2  0          8  10 12 14           
 #           18 17 16   19 20 21
 
-(freq1, freq3) = get_corpus("AzEBcBcBccccEdEdEdEdEEEEE")
-# initial_layout = {(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}
+(freq1, freq3) = get_corpus("AzAEBcBcBcccEdEdEdEdddEEEEE")
+initial_layout = {(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}
 print calculate_cost({(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
 print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
 print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
-
-print optimize(initial_layout, freq1, freq3, w, 0, locked_pairs, 500)
+# {(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}
+print optimize(initial_layout, freq1, freq3, w, 0, locked_pairs, 50)
 
 
 # print_table(freq1)
