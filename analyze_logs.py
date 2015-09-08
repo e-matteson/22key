@@ -257,9 +257,9 @@ w = Weight(num_switches=10, weak_finger=0, hand_balance=0, num_switch_changes=0,
 
 (freq1, freq3) = get_corpus("AzEBcBcBccccEdEdEdEdEEEEE")
 # initial_layout = {(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}
- # print calculate_cost({(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
-initial_layout = {(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}
-# print calculate_cost({(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
+print calculate_cost({(8,10,12):["z","E"], (9,):["A","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
+print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
+print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
 
 print optimize(initial_layout, freq1, freq3, w, 0, locked_pairs, 500)
 
