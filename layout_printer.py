@@ -1,5 +1,6 @@
 #! /bin/python2
 
+import re
 # from analyze_logs import make_reverse_layout
 
 SHIFT_INDEX = 18
@@ -18,8 +19,7 @@ def print_layout_1col(layout):
 
 def print_layout(layout, all_keys_arranged, filename):
     f_cfg = open(filename, 'w')
-    template=['%s\t\t', '%s%s%s%s   %s%s%s%s\t', '%s%s%s%s   %s%s%s%s\t', '  %s%s%s %s%s%s  \t']
-  
+    template=['%s\t\t', '%s%s%s%s   %s%s%s%s\t', '%s%s%s%s   %s%s%s%s\t', '  %s%s%s %s%s%s  \t'] 
     names_to_entries = {}
     for chord in layout.keys():
         for shifted in [0,1]:
@@ -38,7 +38,46 @@ def print_layout(layout, all_keys_arranged, filename):
         # str += '\n' + '#'*70 + '\n'    
         str += '\n'
     f_cfg.write(str)
-    
+
+def read_layout(filename):
+    f_cfg = open(filename, 'r')
+    layout = {}
+    while 1:
+        lines = []
+        while len(lines) < 4:
+            l = f_cfg.readline()
+            if l == "":
+                if len(lines) != 0:
+                    print "WARNING: lines ignored at end of file"
+                return layout
+                
+            if l.strip() != "" and l[0].strip() != "#":
+                # print "something: %s" % l
+                lines.append(re.split('[ \t]+', l.strip()))
+        print "lines:"
+        print lines
+        for b in range(len(lines[0])):
+            chunks = []
+            [chunks.extend(lines[row][b*2:b*2+2]) for row in range(1,4)]
+            chunks =  ''.join(chunks)
+            
+            print '*************************'
+            print chunks
+            print 
+            # chunks = [re.sub('\.', '0', c) for c in chunks]
+            # chunks = [re.sub('[^0]', '1', c) for c in chunks]
+            # chunks = '0'*PADWIDTH + ''.join(chunks)
+            # chunks = ''.join([chunks[j] for j in bit_order])
+            # chunks = int(chunks,2)
+            (indices, shifted) = binary2indices(chunks)
+            try:
+                layout[indices][shifted] =  lines[0][b]
+            except KeyError:
+                value = ['','']
+                value[shifted] = lines[0][b]
+                layout[indices] = value
+    return layout
+
 def indices2binary(indices, shifted):
     press_symbol = "*"
     binary = ['.']*22
@@ -49,14 +88,29 @@ def indices2binary(indices, shifted):
         binary[SHIFT_INDEX] = press_symbol
     return binary
 
-def reorder_optimizer2original(binary):
-    return [binary[i] for i in [21, 20, 19, 16, 17, 18, 14, 12, 10, 8, 0, 2, 4, 6, 15, 13, 11, 9, 1, 3, 5, 7]]
+def binary2indices(binary):
+    print [(i,x) for i,x in enumerate(binary)]
+    binary = list(binary)
+    shifted = binary[SHIFT_INDEX] != '.'
+    binary[SHIFT_INDEX] = '.'
+    binary = reorder_printer2optimizer(binary)
+    indices = tuple([i for i,x in enumerate(binary) if x != '.'])
+    # indices = [
+    return (indices, shifted)
+    
+# def reorder_optimizer2original(binary):
+    # return [binary[i] for i in [21, 20, 19, 16, 17, 18, 14, 12, 10, 8, 0, 2, 4, 6, 15, 13, 11, 9, 1, 3, 5, 7]]
 
 def reorder_printer2optimizer(binary):
     return [binary[i] for i in [11, 3, 10, 2, 9, 1, 8, 0, 12, 4, 13, 5, 14, 6, 15, 7, 18, 17, 16, 19, 20, 21]]
 
 def reorder_optimizer2printer(binary):
     return [binary[i] for i in [7, 5, 3, 1, 9, 11, 13, 15, 6, 4, 2, 0, 8, 10, 12, 14, 18, 17, 16, 19, 20, 21]]
+
+
+# print read_layout("initial")
+# print binary2indices(indices2binary((0,),0))
+
 
 # f_cfg.write(str)
 

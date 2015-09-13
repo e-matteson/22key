@@ -9,9 +9,10 @@ import random
 from warnings import warn
 from copy import deepcopy
 from layout_printer import print_layout
+from layout_printer import read_layout
 
 
-Weight = namedtuple("Weight", "num_switches, weak_finger, hand_balance, num_switch_changes, finger_reused, direction_change, row_change")
+Weight = namedtuple("Weight", "num_switches, weak_finger, hand_balance, num_presses, finger_reused, direction_change, row_change")
 
 
 def load_log(filename):
@@ -53,10 +54,10 @@ def get_corpus(debug_corpus=[]):
     if debug_corpus:
         corpus = debug_corpus
     else:
-        log=load_log("/var/log/logkeys.log") # 
+        # log=load_log("/var/log/logkeys.log") # 
         # mycorpus=load_log("mycorpus.txt")
-        # books=load_log("books.short.txt")
-        corpus = log
+        books=load_log("books.short.txt")
+        corpus = books
     
     #define key sets
     full=set(corpus)
@@ -64,6 +65,7 @@ def get_corpus(debug_corpus=[]):
     alphas = set([chr(x) for x in (range(65, 65+26) + range(97, 97+26))])
     specials = set([x for x in full if len(x)>1 and x!='<Space>' and x!='<#>'])
     mods = set(['<RMeta>', '<LShft>', '<Esc>', '<RCtrl>', '<LAlt>', '<RShft>', '<LCtrl>'])
+    nonmods = full - mods
     moves = set(['<PgDn>', '<PgUp>', '<Home>', '<End>', '<Right>', '<Down>', '<Up>', '<Left>'])
     nums = set([str(x) for x in range(0,10)])
     repeat = set(['<#>'])
@@ -72,7 +74,9 @@ def get_corpus(debug_corpus=[]):
     freq3 = count_freq(corpus, 3)
 
     # print_table(freq1)
+    # print_table(filter(freq3, [full - set(['<Space>'])]))
     # print_table(freq3)
+    # exit()
     # print_table(filter(freq3, [alphas]))
     # print_table(filter(freq1, [alphas]))
 
@@ -176,21 +180,7 @@ def get_row_and_direction_changes(l):
     
 def num_row_changes(left_right_list):
     """ left_right_list is list of first switch in each chord of an n-gram, filtered for one hand/row only."""
-    # print left_right_list
-    # foo = 
-    # lobster = old_row_helper3(left_right_list)
-    # if foo != sum(bar):
-    # print
-    # print foo
-    # print lobster
-    # print bar
-    # print baz
-    # print
-        # print("row failed")
-        # exit(1)
     return old_row_helper(left_right_list)
-# num_row_changes([0, 2, 3, 5, 4])
-# exit()
 
 def is_finger_reused(pressed):
     """ Checks for 'same finger / diff row' transition, only between first two elements of pressed.
@@ -279,7 +269,7 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
         # remove empty sub-lists (transitions with only releases)
         pressed = [x for x in pressed if x]
         # print pressed
-        cost += sum([len(x) for x in pressed]) * freq3_dict[triad] * weight.num_switch_changes
+        cost += sum([len(x) for x in pressed]) * freq3_dict[triad] * weight.num_presses
         cost += is_finger_reused(pressed) * freq3_dict[triad] * weight.finger_reused
         
         for hand_func in [is_left, is_right]:
@@ -304,12 +294,8 @@ def optimize(initial_layout, freq1, freq3, weight, p, locked_pairs, iterations):
     print cost
         
     for i in range(iterations):
-        # print 
-        # print "iter %d:" % (i,)
         new_layout = swap(layout, locked_pairs, 2)
         new_cost = calculate_cost(new_layout, freq1, freq3, weight)
-        # print new_layout
-        # print new_cost
         #short circuiting for speed if p is 0
         if (new_cost <= cost) or (p and (random.random() < p)): 
             # print "accepted!"
@@ -340,36 +326,32 @@ def make_random_layout(chords, keys):
 
 
 random.seed(0)
-pp = pprint.PrettyPrinter()
+
+w = Weight(num_switches=50, weak_finger=10, hand_balance=0, num_presses=20, finger_reused=10, direction_change=30, row_change=10)
+
+# pp = pprint.PrettyPrinter()
 (chords, all_keys, all_keys_arranged, locked_pairs) = get_constants()            
-w = Weight(num_switches=10, weak_finger=10, hand_balance=0, num_switch_changes=0, finger_reused=0, direction_change=0, row_change=0)
-# (freq1,freq3) = get_corpus()
-# print chords
-# print len(chords)
-# print len(all_keys)
-# random.sample(all
-# for 
-(freq1, freq3) = get_corpus()#"AzAEBcBcBEdcEdcEdcEdcEdcEdcEdcEdcEEEEEEEEEE")
-# locked_pairs = [["d","c"], ["E","B"]]
-# locked_pairs = [["d","B"], ["c","z"],  ["E", "A"]]
-# bad  = {(0,2,4):["E", ""], (12,14):["A","z"],  (2,4):["", "B"], (8,):["d", ""] } # 
-# bad  = {(9,):["d","B"], (12,):["c","z"],  (10,):["E", "A"]}
-# good = {(8,):["d","B"], (10,):["c","z"],  (12,):["E", "A"]}
-# print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
-# print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
-# {(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}
+(freq1, freq3) = get_corpus()
 
 initial_layout = make_random_layout(chords, all_keys)
-# print initial_layout
-# print all_keys
-# print "made"
 # print_layout_4col(make_reverse_layout(initial_layout), all_keys_arranged) 
-print_layout(initial_layout, all_keys_arranged, 'keymap3') 
+print_layout(initial_layout, all_keys_arranged, 'initial') 
 
-# pp.pprint(initial_layout)
-# print
-# print
-# pp.pprint(optimize(initial_layout, freq1, freq3, w, 0, locked_pairs, 100))
+foo = read_layout("initial")
+print initial_layout
+print foo
+for key in foo.keys():
+    assert(initial_layout[key] == foo[key])
+    
+# assert(initial_layout == foo)
+# new = optimize(initial_layout, freq1, freq3, w, 0.05, locked_pairs, 10000)
+# print_layout(new, all_keys_arranged, 'newkeymap2') 
+
+
+
+
+
+
 
 
 # print_table( freq1)
@@ -411,3 +393,13 @@ print_layout(initial_layout, all_keys_arranged, 'keymap3')
         
 # def spam(left_right_list):
 #     return sum(list(row_helper2(left_right_list)))
+
+#"AzAEBcBcBEdcEdcEdcEdcEdcEdcEdcEdcEEEEEEEEEE")
+# locked_pairs = [["d","c"], ["E","B"]]
+# locked_pairs = [["d","B"], ["c","z"],  ["E", "A"]]
+# bad  = {(0,2,4):["E", ""], (12,14):["A","z"],  (2,4):["", "B"], (8,):["d", ""] } # 
+# bad  = {(9,):["d","B"], (12,):["c","z"],  (10,):["E", "A"]}
+# good = {(8,):["d","B"], (10,):["c","z"],  (12,):["E", "A"]}
+# print calculate_cost({(8,10,12):["z","A"], (9,):["E","c"],  (9,10):["B", "d"]}, freq1, freq3, w)
+# print calculate_cost({(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}, freq1, freq3, w)
+# {(8,10,12):["z","A"], (9,):["E","d"],  (9,10):["B", "c"]}

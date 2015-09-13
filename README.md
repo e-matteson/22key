@@ -103,10 +103,29 @@ Key numbering in original mapper.py:
 #     13 12 11 10         9  8  7  6
 #           5  4  3    2  1  0
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Key numbering in optimizer:
 #     7  5  3  1          9  11 13 15
-#     6  4  2  0          8  10 12 14           
+#     6  4  2  0          8  10 12 14    
 #           18 17 16   19 20 21
+
+Key numbering in layout_printer:
+#     0  1  2  3          4  5  6  7
+#     8  9  10 11         12 13 14 15
+#           16 17 18   19 20 21 
 
 
 ## Layout Optimization
