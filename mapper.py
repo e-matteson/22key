@@ -27,7 +27,6 @@ PADWIDTH = 10; #22 keys, uint32
 
 
 
-
 ########## structure of .c file
 top_str = "//#include avr stuff? \nvoid translate(uint32_t state){\n\n    //blank out mods except shift, set mod_byte\n\n"
 

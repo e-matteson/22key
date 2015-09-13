@@ -1,8 +1,6 @@
 #! /bin/python2
 
-
-f_cfg = open('keymap2', 'w')
-
+f_cfg = open('keymap3', 'w')
 
 # decide how to deal with these - check and set flags first?
 # what's difference between seding
