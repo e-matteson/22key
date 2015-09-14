@@ -95,7 +95,9 @@ def get_corpus(debug_corpus=[]):
     
     # print_table(filter(freq2, [alphas]))
     print_table(filter(freq2, [alphas]))
-    return (dict(freq1), dict(freq3))
+   # return (dict(freq1), dict(freq3))
+    print filter(freq2, [alphas])
+   return 
 
 
 def print_layout(layout, all_keys_arranged, filename):    
