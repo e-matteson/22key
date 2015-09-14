@@ -1,6 +1,4 @@
 #! /bin/python2
-
-
 import re
 import pprint
 from collections import Counter
@@ -8,9 +6,11 @@ from collections import namedtuple
 import random 
 from warnings import warn
 from copy import deepcopy
-from layout_printer import print_layout
-from layout_printer import read_layout
+# from layout_printer import print_layout
+# from layout_printer import read_layout
 
+
+SHIFT_INDEX = 18
 
 Weight = namedtuple("Weight", "num_switches, weak_finger, hand_balance, num_presses, finger_reused, direction_change, row_change")
 
@@ -20,9 +20,9 @@ def load_log(filename):
     log=f.read()
     f.close()
     #remove logging start/stop timestamp messages and surrounding newlogs
-    log=re.sub("\n+Logging [(started)(stopped)]+ at [-0-9 :]+(> \n\n)?", "x", log)
-    log =re.sub("\n", "<Ret>", log)
-    log =re.sub(" ", "<Space>", log)
+    log=re.sub("\n+[lL]ogging [(started)(stopped)]+ at [-0-9 :]+(> \n\n)?", "x", log)
+    log =re.sub("\n", "<ret>", log)
+    log =re.sub(" ", "<space>", log)
     #remove +num from repeat marker
     log =re.sub("<#\+[0-9]+>", "<#>", log)
     #split into individual keystrokes
@@ -30,11 +30,14 @@ def load_log(filename):
     log = re.findall(r"(<[A-Za-z#]+>|[^\240\x00\304\212])",log)
     return log
 
-def print_table(freq):
+def print_table(freq,factor=1):
     print '______________________'
     for line in freq:
         # print line
-        print '\t'.join(line[0])+'\t- '+str(line[1])
+        #todo remove temporary <space> filter
+        if "<space>" in line[0]:
+            continue
+        print '\t'.join(line[0])+'\t- '+str(line[1]*factor)
     print '______________________'
 
 def count_freq(log, num):
@@ -50,37 +53,160 @@ def filter(freq, set_list):
         freq = [x for x in freq if (x[0][i] in set_list[i])]
     return freq
 
+def filter2(freq, filters):
+    filtered_freq = []
+    for f in range(len(filters)):
+        # for ngram in freq:
+            # print (False not in [x in filters[f] for x in ngram])
+            # print ([x for x in ngram[0]])
+
+        freq = [ngram for ngram in freq if (False not in [x in filters[f] for x in ngram[0]])]
+    return freq
+
 def get_corpus(debug_corpus=[]):
     if debug_corpus:
         corpus = debug_corpus
     else:
         # log=load_log("/var/log/logkeys.log") # 
-        # mycorpus=load_log("mycorpus.txt")
-        books=load_log("books.short.txt")
-        corpus = books
+        log=load_log("logkeys.log")  #
+        mycorpus=load_log("mycorpus.txt")
+        # books=load_log("books.short.txt")
+        corpus = log
     
     #define key sets
     full=set(corpus)
-    len1 = set([x for x in full if len(x)==1 or x=='<Space>'])
+    len1 = set([x for x in full if len(x)==1 or x=='<space>'])
     alphas = set([chr(x) for x in (range(65, 65+26) + range(97, 97+26))])
-    specials = set([x for x in full if len(x)>1 and x!='<Space>' and x!='<#>'])
-    mods = set(['<RMeta>', '<LShft>', '<Esc>', '<RCtrl>', '<LAlt>', '<RShft>', '<LCtrl>'])
+    specials = set([x for x in full if len(x)>1 and x!='<space>' and x!='<#>'])
+    mods = set(['<rmeta>', '<lshft>', '<esc>', '<rctrl>', '<lalt>', '<rshft>', '<lctrl>'])
     nonmods = full - mods
-    moves = set(['<PgDn>', '<PgUp>', '<Home>', '<End>', '<Right>', '<Down>', '<Up>', '<Left>'])
+    moves = set(['<pgdn>', '<pgup>', '<home>', '<end>', '<right>', '<down>', '<up>', '<left>'])
     nums = set([str(x) for x in range(0,10)])
     repeat = set(['<#>'])
 
     freq1 = count_freq(corpus, 1)
+    freq2 = count_freq(corpus, 2)
     freq3 = count_freq(corpus, 3)
-
-    # print_table(freq1)
-    # print_table(filter(freq3, [full - set(['<Space>'])]))
-    # print_table(freq3)
+  
+#   print_table(freq1, factor=1000)  
+    # print_table(freq2, factor=1000)  
+    # print_table(filter(freq3, [full - set(['<Space>'])]), factor=1000)
+#    print_table(freq3, factor=1000)
     # exit()
-    # print_table(filter(freq3, [alphas]))
+#    print_table(filter(freq3, [full-mods-moves]))
     # print_table(filter(freq1, [alphas]))
 
+    
+    # print_table(filter(freq2, [alphas]))
+    print_table(filter(freq2, [alphas]))
     return (dict(freq1), dict(freq3))
+
+
+def print_layout(layout, all_keys_arranged, filename):    
+    f_cfg = open(filename, 'w')
+    template=['%s\t\t', '%s%s%s%s   %s%s%s%s\t', '%s%s%s%s   %s%s%s%s\t', '  %s%s%s %s%s%s  \t'] 
+    names_to_entries = {}
+    for chord in layout.keys():
+        for shifted in [0,1]:
+            name = layout[chord][shifted]
+            if name:
+                binary = indices2binary(chord, shifted)
+                names_to_entries[name] = [(name,), tuple(binary[0:8]), tuple(binary[8:16]), tuple(binary[16:22])]
+                
+    str = ""               
+    for row in all_keys_arranged:
+        # n=len(row)
+        for i in range(4):
+            for name in row:
+                str+= template[i] % names_to_entries[name][i]
+            str += '\n'    
+        # str += '\n' + '#'*70 + '\n'    
+        str += '\n'
+    f_cfg.write(str)
+
+def read_layout(filename):
+    #todo check for duplicate chord assignments
+    f_cfg = open(filename, 'r')
+    layout = {}
+    while 1:
+        lines = []
+        while len(lines) < 4:
+            l = f_cfg.readline()
+            #check for EoF
+            if l == "":
+                if len(lines) != 0:
+                    print "WARNING: lines ignored at end of file"
+                return layout
+
+            # skip blank lines and comments    
+            if l.strip() == "" or l[0:2].strip() == "//":
+                continue
+
+            # shifted version of previously defined chord
+            if len(l.split())>1 and l.split()[1].strip() == "shifted":
+                if len(lines) != 0:
+                    print "WARNING: lines ignored before shifted command"
+                unshifted_char = l.split()[2].strip()
+                shifted_char = l.split()[0].strip()
+                found_unshifted_char = False
+                for chord in layout:
+                    if layout[chord][0] == unshifted_char:
+                        if layout[chord][1]:
+                            raise RuntimeError("same chord given for: %s %s" %
+                                               (layout[chord][1], shifted_char))
+                        layout[chord][1] = shifted_char
+                        found_unshifted_char = True
+                        break
+                if not found_unshifted_char:
+                    raise RuntimeError("unknown character referenced in shifted command")
+                lines = [] 
+            # part of normal chord ascii art
+            else:
+                lines.append(re.split('[ \t]+', l.strip()))
+        for b in range(len(lines[0])):
+            chunks = []
+            [chunks.extend(lines[row][b*2:b*2+2]) for row in range(1,4)]
+            chunks =  ''.join(chunks)            
+            (indices, shifted) = binary2indices(chunks)
+            try:
+                if layout[indices][shifted]:
+                    raise RuntimeError("same chord given for: %s %s" %
+                                       (layout[indices][shifted],lines[0][b]))
+                layout[indices][shifted] =  lines[0][b]
+            except KeyError:
+                value = ['','']
+                value[shifted] = lines[0][b]
+                layout[indices] = value
+    return layout
+
+def indices2binary(indices, shifted):
+    press_symbol = "*"
+    binary = ['.']*22
+    for i in indices:
+        binary[i] = press_symbol
+    binary = reorder_optimizer2printer(binary)
+    if shifted:
+        binary[SHIFT_INDEX] = press_symbol
+    return binary
+
+def binary2indices(binary):
+    binary = list(binary)
+    shifted = binary[SHIFT_INDEX] != '.'
+    binary[SHIFT_INDEX] = '.'
+    binary = reorder_printer2optimizer(binary)
+    indices = tuple([i for i,x in enumerate(binary) if x != '.'])
+    # indices = [
+    return (indices, shifted)
+    
+# def reorder_optimizer2original(binary):
+    # return [binary[i] for i in [21, 20, 19, 16, 17, 18, 14, 12, 10, 8, 0, 2, 4, 6, 15, 13, 11, 9, 1, 3, 5, 7]]
+
+def reorder_printer2optimizer(binary):
+    return [binary[i] for i in [11, 3, 10, 2, 9, 1, 8, 0, 12, 4, 13, 5, 14, 6, 15, 7, 18, 17, 16, 19, 20, 21]]
+
+def reorder_optimizer2printer(binary):
+    return [binary[i] for i in [7, 5, 3, 1, 9, 11, 13, 15, 6, 4, 2, 0, 8, 10, 12, 14, 18, 17, 16, 19, 20, 21]]
+
 
 def make_reverse_layout(layout):
     reverse = {}
@@ -161,7 +287,6 @@ def direction_helper(l):
 def old_row_helper(left_right_list):
     # print [abs(left_right_list[i+1]%2 - left_right_list[i]%2) for i in range(len(left_right_list)-1)]
     return sum([abs(left_right_list[i+1]%2 - left_right_list[i]%2) for i in range(len(left_right_list)-1)])
-
 
 def get_row_and_direction_changes(l):
     any_true = False
@@ -325,23 +450,22 @@ def make_random_layout(chords, keys):
     return layout
 
 
-random.seed(0)
+#random.seed(0)
 
-w = Weight(num_switches=50, weak_finger=10, hand_balance=0, num_presses=20, finger_reused=10, direction_change=30, row_change=10)
+#w = Weight(num_switches=50, weak_finger=10, hand_balance=0, num_presses=20, finger_reused=10, direction_change=30, row_change=10)
 
 # pp = pprint.PrettyPrinter()
 (chords, all_keys, all_keys_arranged, locked_pairs) = get_constants()            
 (freq1, freq3) = get_corpus()
+# print freq3
+#lay = read_layout("dvorak.kmap.bak")
+#print_layout(lay, [["a", "o", "e", "u",], ["h", "t", "n", "s",]], "dvtest.kmap")
 
-initial_layout = make_random_layout(chords, all_keys)
+
+# initial_layout = make_random_layout(chords, all_keys)
 # print_layout_4col(make_reverse_layout(initial_layout), all_keys_arranged) 
-print_layout(initial_layout, all_keys_arranged, 'initial') 
+#print_layout(initial_layout, all_keys_arranged, 'initial') 
 
-foo = read_layout("initial")
-print initial_layout
-print foo
-for key in foo.keys():
-    assert(initial_layout[key] == foo[key])
     
 # assert(initial_layout == foo)
 # new = optimize(initial_layout, freq1, freq3, w, 0.05, locked_pairs, 10000)
