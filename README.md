@@ -1,11 +1,25 @@
 # 22key
 
 Firmware for an attiny2313a in a 22 key chording keyboard.
+Well, now it's for a teensy LC.
 
 Unfinished.
 
+## STATUS ##
 
-## NEW IDEAS
+* have teensy, can program it.
+* optimizations are running and running
+
+## TODO ##
+
+* test teensy as hid
+* test simple scanning
+* port full firmware to arduino/pde
+* get bluetooth working
+* fix switch wiring
+* more permanent wiring, protoboards + ethernet
+
+## NEW IDEAS ##
 
 Don't need a chord timer for each key, just one that restarts whenever the first key is newly pressed or released after a send. When that timer runs out, the current state is sent.
 
@@ -22,33 +36,36 @@ if ((old ^ new) & old) something released, else nothing released
 one signed char for timer, seperate reset constants, flag for last pressed or released
 what if both pressed and released in one scan? treat as just a press
 
-## MOD KEY EXPLANATION
+## MOD KEY EXPLANATION ##
 
 BUT THERE'S NO RELATIVE UP/DOWN COMMAND, JUST SEND LIST OF CURRENTLY PRESSED KEYS
 
 Mods don't have chord timers. Either they're sent immediately, or
 their entries are set to MOD_HELD when pressed.
 
-### For ctrl and alt:
+### For ctrl and alt: ###
+
   Send 'ctrl down' as soon as ctrl is pressed.
   Send 'ctrl up' as soon as ctrl is released. (and same for alt)
 
-### For esc: TODO
+### For esc: TODO ###
+
   Should it behave like a normal keyboard?
   Or can meta be made holdable/reuseable, like ctrl and alt?
 
-### For shift: 
+### For shift: ###
+
   Set chord_timer[i] to MOD_HELD when pressed.
   Use when translating matrix to key after some other chord timer runs out.
   Don't send directly - shift pairs may not match dvorak's pairs.
   Set chord_timer[i] to NOT_PRESSED when released.
 
 
-## Translation ideas
+## Translation ideas ##
 
 Need to associate switch matrix states with usage codes. Maybe with key names in between, for clarity. 
 
-### binary, indexing into usage code array
+### binary, indexing into usage code array ###
 
 1. represent current state as 22bit binary value (in int32 or whatever).
 2. use value to index into char[?] array containing corresponding usage codes.
@@ -56,14 +73,14 @@ Need to associate switch matrix states with usage codes. Maybe with key names in
 Problem: array is huge and sparse. worst case is char[2^22], no go.
 
 
-### binary, else-if
+### binary, else-if ###
 
 1. represent current state as 22bit binary value (in int32 or whatever).
 2. have giant list of `#define KEYNAME 0xState`
 3. have giant chain of `else if(state == KEYNAME){ send(usage_code);}`
 
 
-### binary, generated else-if
+### binary, generated else-if ###
 
 1. Write python to:
 
@@ -81,19 +98,19 @@ Problem: array is huge and sparse. worst case is char[2^22], no go.
    ```
 2. in main file, `#include <translate.h>`
 
-### Benefits:
+### Benefits: ###
 
 * no big lists of #defines
 * little stack usage, compared to arrays or enums.
 * easier to re-map than if manually maintained
 
-### Drawbacks:
+### Drawbacks: ###
 
 * c code is less readable without accompanying python script
 
 
 
-## Notes:
+### Notes: ###
 
 USB-HID spec has requirements this probably won't meet, especially for boot keyboards.
 I want to use bluefruit for Tx only...
@@ -102,20 +119,6 @@ Key numbering in original mapper.py:
 #     21 20 19 18         17 16 15 14
 #     13 12 11 10         9  8  7  6
 #           5  4  3    2  1  0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 Key numbering in optimizer:
 #     7  5  3  1          9  11 13 15
@@ -151,4 +154,3 @@ how to deal with physical shift:
 * but if others aren't restricted... how to handle swaps?
 ** pick two chords to swap. if either is in locked_pairs, swap both shifted and unshifted. else, randomly pick one of those to swap.
 
-### 

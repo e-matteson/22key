@@ -396,6 +396,7 @@ def optimize(initial_layout, freq1, freq3, weight, heats, locked_pairs, iteratio
     print cost
 
     for iter in range(iterations):
+        print iter
         new_layout = swap(layout, locked_pairs, 2)
         new_cost = calculate_cost(new_layout, freq1, freq3, weight)
         
@@ -444,7 +445,7 @@ def print_dvorak_ngrams(freq):
 # use heat/probability heat[i][1] until iteration heat[i][0]
 
 def run_optimizer(corpus_file, out_file, num_iters, heats, weights):
-    commit = ""
+    commit = "aa512"
     (chords, all_keys, all_keys_arranged, locked_pairs) = get_constants()            
     (freq1, freq3) = get_corpus(corpus_file, [1,3], ["nonmods"])
     initial_layout = make_random_layout(chords, all_keys)
@@ -457,13 +458,19 @@ def run_optimizer(corpus_file, out_file, num_iters, heats, weights):
 
 
 
-w1 = Weight(num_switches=50, weak_finger=10, hand_balance=0,
-           num_presses=20, finger_reused=10, direction_change=30, row_change=10)
+# w1 = Weight(num_switches=5, weak_finger=10, hand_balance=5,
+#            num_presses=50, finger_reused=20, direction_change=20, row_change=20)
+
+# UNCHANGED SINCE LAST RUN 
+w1 = Weight(num_switches=5, weak_finger=5, hand_balance=5,
+            num_presses=50, finger_reused=5, direction_change=5, row_change=5)
+
 tenths = [x * 10**5 for x in range(1,11)]
 logprobs = [0.8, 0.4, 0.2, 0.1, 0.05, 0.025, 0.0125, 0.00625, .003125, 0]
 
 heats1 =  zip(tenths, logprobs)
-run_optimizer("mycorpus.txt", "map1.kmp", 10**1, heats1, w1)
+run_optimizer("mycorpus.txt", "mapTEST.kmp", 100, heats1, w1)
+# run_optimizer("logkeys.log", "map6.kmp", 10**6, heats1, w1)
 
 # print freq3
 

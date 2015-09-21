@@ -9,7 +9,6 @@
 
 #define PRESS_DELAY    10    //timer units TBD
 #define RELEASE_DELAY    10    //timer units TBD
-
 #define REPEAT_DELAY   1000
 #define REPEAT_PERIOD  50
 #define STANDBY_DELAY  10000   //different units than other timers, long!
