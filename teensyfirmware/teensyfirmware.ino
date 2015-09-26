@@ -1,4 +1,5 @@
 #include <TimerOne.h>
+// #include <TimerOne.h>
 
 #define PRESS_DELAY    100    // * ~2ms
 #define RELEASE_DELAY  150    // * ~2ms
@@ -47,22 +48,44 @@ void setup() {
   Timer1.attachInterrupt(decrement_timers);
   // intialize serial?
   //  intialize bluetooth;
+
 } 
 
 void loop() {
+  
   /**** TODO
    * why is a -> ab -> a  non-deterministic? what should it be?
    */
+  /* delay(50); */
+  /* Keyboard.set_key2(KEY_B); */
+  /* Keyboard.send_now(); */
+  /* delay(50); */
+  /* Keyboard.set_key1(0); */
+  /* Keyboard.set_key2(0); */
+  /* Keyboard.send_now(); */
+
   scanMatrix();
   checkForChanges();
-
+  // Serial.println(state);
+    // uint32_t F_MASK = 1<<1;
+    // Serial.println(F_MASK);
+ 
+  
   // if(chord_timer == 0 || repeat_period_timer == 0){
   if(chord_timer == 0){
-    send(state);
+
+    
+    // Keyboard.set_key1(0);
+    // Keyboard.set_key2(0);
+    // Keyboard.set_key3(0);
+    // Keyboard.set_key4(0);
+    // Keyboard.set_key5(0);
+    // Keyboard.set_key6(0);
+    // Keyboard.set_modifier(0);
+    // Keyboard.send_now();
+
+    translate_and_send(state);
   }
-  // else if(chord_timer == PLEASE_SEND_LAST_STATE){
-  //   send(last_state);
-  // }
   last_state = state;
   //wait briefly?
 }
@@ -91,51 +114,124 @@ void scanMatrix(){
   }
 }
 
-void send(uint32_t _state){
-  //todo translate
-  //write
-  // uint32_t A_MASK = 1<<1;
-  // uint32_t  B_MASK = 1<<4;
-  // uint32_t C_MASK = 1<<7;
-  // uint32_t D_MASK = 1<<9;
-  if (!_state){
-    //if everything was released, don't send anything
-    // todo think about how this interacts with mods
-    return;
-  }
-
-  uint32_t A_MASK = 1<<1;
-  uint32_t  B_MASK = 1<<4;
-  uint32_t C_MASK = 1<<7;
-  uint32_t D_MASK = 1<<10;
-
+void send(char letter, int flag_ctrl){
   Serial.print("(");
-  if (_state & A_MASK){
-    // Keyboard.
-    Serial.print("a");
+  if (flag_ctrl){
+    Serial.print("^");
   }
-  if (_state & B_MASK){
-    Serial.print("b");
-  }
-  if (_state & C_MASK){
-    Serial.print("c");
-  }
-  if (_state & D_MASK){
-    Serial.print("d");
-  }
-  
-  Serial.print("), up ");
+  Serial.print(letter);
+  Serial.print(")");
   Serial.println(chord_timer);
+
+  Keyboard.set_key1(letter);
+  Keyboard.set_key2(0);
+  Keyboard.set_key3(0);
+  Keyboard.set_key4(0);
+  Keyboard.set_key5(0);
+  Keyboard.set_key6(0);
+  
+  if (flag_ctrl){
+    Keyboard.set_modifier(MODIFIERKEY_CTRL);
+  }
+  Keyboard.send_now();
+  
+  delay(50);
+  Keyboard.set_key1(0);
+  Keyboard.set_key2(0);
+  Keyboard.set_key3(0);
+  Keyboard.set_key4(0);
+  Keyboard.set_key5(0);
+  Keyboard.set_key6(0);
+  if (!flag_ctrl){
+    Keyboard.set_modifier(0);
+  }
+  Keyboard.send_now();
 
   chord_timer = ALREADY_SENT;
   repeat_period_timer = REPEAT_PERIOD;
-  // Serial.println(state);
-  // Serial.println(last_state);
 }
+
+void translate_and_send(uint32_t _state){
+  Serial.print("transend! ");
+  Serial.print(_state);
+  
+
+  uint32_t CTRL_MASK = 1<<0;  
+  uint32_t F_MASK = 1<<1;
+  uint32_t  B_MASK = 1<<4;
+  uint32_t N_MASK = 1<<7;
+  uint32_t P_MASK = 1<<10;
+  
+  //blank out mods except shift, set mod flags
+  int flag_ctrl = _state & CTRL_MASK && 1;		//KEY_leftcontrol
+  _state &= ~CTRL_MASK; //blank out ctrl bit
+  Serial.print(", ");
+  Serial.println(_state);
+  // Serial.println("key_a");
+  // Serial.println(KEY_B);
+
+  if (!_state){
+  //if everything was released, don't send anything
+  // todo think about how this interacts with mods
+    send(0, flag_ctrl);
+    return;
+  }
+  
+  if (_state == F_MASK){
+    send(KEY_X, flag_ctrl);
+  }
+  else if (_state == B_MASK){
+    send(KEY_B, flag_ctrl);
+  }
+  else if (_state == N_MASK){
+    send(KEY_N, flag_ctrl);
+  }
+  else if (_state == P_MASK){
+    send(KEY_P, flag_ctrl);
+  }
+  else{
+    Serial.print("BAD STATE: ");
+    Serial.print(_state);
+    send(0, flag_ctrl);
+  }
+  return;
+}
+  //exact matches that depend on shift, some are macros
+
+  
+  // if(_state == 24580){		//macro_paren
+  //   send(38, 1, mod_byte);
+  //   send(39, 1, mod_byte);
+  //   send(80, 0, mod_byte);
+  // }
+
+  // //matches disregarding shift
+  // set shift_flag, blank out shift bit in _state
+  // if(_state == 1056784){		//KEY_E
+  //   send(8, shift_flag, mod_byte);
+  // }
+  // if(_state == 2105376){		//KEY_D
+  //   send(7, shift_flag, mod_byte);
+  // }
+  // if(_state == 270340){		//KEY_G
+  //   send(10, shift_flag, mod_byte);
+  // }
+  // if(_state == 532488){		//KEY_F
+  //   send(9, shift_flag, mod_byte);
+  // }
+  // if(_state == 73744){		//KEY_I
+  //   send(12, shift_flag, mod_byte);
+  // }
+  // if(_state == 40968){		//KEY_J
+  //   send(13, shift_flag, mod_byte);
+  // }
+  // else{
+  //   //only mods are down
+  //   send(0, shift_flag, mod_byte);}
 
 
 /* if something changed, reset timers and set flags 
- * todo: catch quick tap here
+ * if a switch was tapped and released, send the last_state immediately
  */
 void checkForChanges(){
   state_changes = state ^ last_state;
@@ -151,7 +247,7 @@ void checkForChanges(){
 	&& chord_timer > 0
 	&& chord_timer <= (PRESS_DELAY-DEBOUNCE_DELAY)){
 	//switch was quickly tapped, force it to send last_state now
-      send(last_state);
+      translate_and_send(last_state);
     }
     chord_timer = RELEASE_DELAY;
     last_change_was_press = false;
@@ -196,3 +292,6 @@ void decrement_timers(){
       // 	Serial.print(", ");
       // 	Serial.println(c);
       // }
+
+
+
