@@ -73,7 +73,6 @@ void loop() {
   
   // if(chord_timer == 0 || repeat_period_timer == 0){
   if(chord_timer == 0){
-
     
     // Keyboard.set_key1(0);
     // Keyboard.set_key2(0);
@@ -83,7 +82,6 @@ void loop() {
     // Keyboard.set_key6(0);
     // Keyboard.set_modifier(0);
     // Keyboard.send_now();
-
     translate_and_send(state);
   }
   last_state = state;

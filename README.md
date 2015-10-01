@@ -8,16 +8,24 @@ Unfinished.
 ## STATUS ##
 
 * have teensy, can program it.
-* optimizations are running and running
+* optimization doesn't look very useful
 
 ## TODO ##
 
-* test teensy as hid
-* test simple scanning
 * port full firmware to arduino/pde
 * get bluetooth working
 * fix switch wiring
 * more permanent wiring, protoboards + ethernet
+* deal with overlapping runs
+  * the 'quick tap detection' feature will trigger if two separate keys overlap for less than press_delay
+  * go back to individual timers for each switch? overkill
+  * make press_delay short enough the tap detection is unnecessary? probly requires hand synchronization to be too tight.
+  * 
+
+heheoturrutewhoaheturtehsueeussueohtthththheheheehheohtuhstuhunskwmjqwmqwkjwkjwqmweuohtnthuethththetetetetetetthetonhuotttt
+
+
+
 
 ## NEW IDEAS ##
 
@@ -154,3 +162,6 @@ how to deal with physical shift:
 * but if others aren't restricted... how to handle swaps?
 ** pick two chords to swap. if either is in locked_pairs, swap both shifted and unshifted. else, randomly pick one of those to swap.
 
+
+ababa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
