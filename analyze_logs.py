@@ -53,7 +53,7 @@ def filter_freqs(freq, filters):
         freq = [ngram for ngram in freq if (False not in [x in filters[f] for x in ngram[0]])]
     return freq
 
-def get_corpus(filename, ngram_lengths, categories=[], debug_corpus=[]):
+def get_corpus(filename, ngram_lengths, categories=[], debug_corpus=[], use_dict=True):
     if debug_corpus:
         corpus = debug_corpus
     else:
@@ -74,19 +74,23 @@ def get_corpus(filename, ngram_lengths, categories=[], debug_corpus=[]):
         "moves" : set(['<pgdn>','<pgup>','<home>','<end>','<right>','<down>','<up>','<left>']),
         "nums" : set([str(x) for x in range(0,10)]),
         "repeat" : set(['<#>'])}
-    category_dict["nonmods"] = full - category_dict["mods"] - set(['<#>', '<enter>', '<bcksp>'])
+    # //should have removed space as well before first long optimizations...
+    category_dict["nonmods"] = full - category_dict["mods"] - set(['<#>', '<enter>', '<bcksp>', '<space>'])
         
     freqs = tuple(count_freq(corpus, n) for n in ngram_lengths)
 
     # optionally filter
     if categories:
         freqs = tuple(filter_freqs(f, [category_dict[c] for c in categories]) for f in freqs)
+    if use_dict:
+        freqs = tuple(dict(f) for f in freqs)
+    return freqs
 
-    return tuple(dict(f) for f in freqs)
-
-def print_layout(layout, all_keys_arranged, filename, notes=''):    
+def print_layout(layout, all_keys_arranged, filename, notes=''):
+    print all_keys_arranged
     f_cfg = open(filename, 'w')
-    template=['%s\t\t', '%s%s%s%s   %s%s%s%s\t', '%s%s%s%s   %s%s%s%s\t', '  %s%s%s %s%s%s  \t'] 
+    template=['%s\t\t', '%s%s%s%s   %s%s%s%s\t', '%s%s%s%s   %s%s%s%s\t', '  %s%s%s %s%s%s  \t']
+    unknown_entry=["UNKNOWN", ('-',)*8, ('-',)*8, ('-',)*6]
     names_to_entries = {}
     for chord in layout.keys():
         for shifted in [0,1]:
@@ -102,7 +106,11 @@ def print_layout(layout, all_keys_arranged, filename, notes=''):
         # n=len(row)
         for i in range(4):
             for name in row:
-                str+= template[i] % names_to_entries[name][i]
+                try:
+                    str+= template[i] % names_to_entries[name][i]
+                except KeyError:
+                    # print ((name,)+("-",)*22)
+                    str+= template[i] % unknown_entry[i]
             str += '\n'    
         # str += '\n' + '#'*70 + '\n'    
         str += '\n'
@@ -430,10 +438,10 @@ def make_random_layout(chords, keys):
             layout[tuple(chords[i])] = ['', '']
     return layout
 
-def print_dvorak_ngrams(freq):
-    ngrams =  [list(x[0]) for x in freq[0:10]]
-    layout = read_layout("dvorak.kmap.bak")
-    print_layout(layout, ngrams, "dvtest.kmap")
+def print_ngram_image(layout_file, freq):
+    ngrams = [list(x[0]) for x in freq[0:100]]
+    layout = read_layout(layout_file)
+    print_layout(layout, ngrams, "ngram_"+layout_file)
     # dv_arranged = [[a o e u], [h t n s], [\' , . p], [g c r l], [; q j k], [m w v s], [y i x], [f d b],
 
 
@@ -460,17 +468,20 @@ def run_optimizer(corpus_file, out_file, num_iters, heats, weights):
 
 # w1 = Weight(num_switches=5, weak_finger=10, hand_balance=5,
 #            num_presses=50, finger_reused=20, direction_change=20, row_change=20)
+def single_optimizer_run():
+    # UNCHANGED SINCE LAST RUN 
+    w1 = Weight(num_switches=5, weak_finger=5, hand_balance=5,
+                num_presses=50, finger_reused=5, direction_change=5, row_change=5)
 
-# UNCHANGED SINCE LAST RUN 
-w1 = Weight(num_switches=5, weak_finger=5, hand_balance=5,
-            num_presses=50, finger_reused=5, direction_change=5, row_change=5)
+    tenths = [x * 10**5 for x in range(1,11)]
+    logprobs = [0.8, 0.4, 0.2, 0.1, 0.05, 0.025, 0.0125, 0.00625, .003125, 0]
 
-tenths = [x * 10**5 for x in range(1,11)]
-logprobs = [0.8, 0.4, 0.2, 0.1, 0.05, 0.025, 0.0125, 0.00625, .003125, 0]
-
-heats1 =  zip(tenths, logprobs)
-run_optimizer("mycorpus.txt", "mapTEST.kmp", 100, heats1, w1)
-# run_optimizer("logkeys.log", "map6.kmp", 10**6, heats1, w1)
+    heats1 =  zip(tenths, logprobs)
+    run_optimizer("mycorpus.txt", "mapTEST.kmp", 100, heats1, w1)
+    # run_optimizer("logkeys.log", "map6.kmp", 10**6, heats1, w1)
+    
+(freq1,freq2, freq3) = get_corpus("mycorpus.txt", [1,2,3], ["nonmods"], use_dict=False)
+print_ngram_image("map3.kmp", freq2)
 
 # print freq3
 

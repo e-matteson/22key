@@ -22,10 +22,17 @@ Unfinished.
   * make press_delay short enough the tap detection is unnecessary? probly requires hand synchronization to be too tight.
   * 
 
-heheoturrutewhoaheturtehsueeussueohtthththheheheehheohtuhstuhunskwmjqwmqwkjwkjwqmweuohtnthuethththetetetetetetthetonhuotttt
+want to mount and wire stuff. don't have enough protoboard? annoying. can mechanically mount switches, keep breadboard for now.
+
+mount ideas:
+* flat wood top, cardboard buttresses underneath fit to leg curve
+* battery on strap - more easily replacable
+* innertube chunk of strap for stretchiness
+* maybe innertube over electronics?
+* drill holes through wood, "stitch" to strap
 
 
-
+don't need to do anything fancy with ctrl. Can release it in the middle of shortcuts, C-x C-s == C-x-s
 
 ## NEW IDEAS ##
 
@@ -163,5 +170,3 @@ how to deal with physical shift:
 ** pick two chords to swap. if either is in locked_pairs, swap both shifted and unshifted. else, randomly pick one of those to swap.
 
 
-ababa
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

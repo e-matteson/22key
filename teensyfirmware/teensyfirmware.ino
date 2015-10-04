@@ -15,11 +15,12 @@
 // #define PLEASE_SEND_LAST_STATE -4
 #define NUM_ROWS 3
 #define NUM_COLS 4
+#define NUM_HANDS 2
 //using input without pullup as hiZ state
 #define HI_Z INPUT
 
-char row_pins[NUM_ROWS]= {7,8,9};
-char col_pins[NUM_COLS] = {3,4,5,6};
+uint8_t row_pins[NUM_HANDS][NUM_ROWS]= {{20, 21,22}, {7,8,9}};
+uint8_t col_pins[NUM_HANDS][NUM_COLS] = {{16, 17, 18, 19}, {3,4,5,6}};
 
 int32_t chord_timer;
 short repeat_delay_timer;
@@ -34,19 +35,20 @@ uint32_t state_changes;
 void setup() {
 // row_pins 
 //initialize rows and columns - todo both hands
-  for(char r = 0; r != NUM_ROWS; r++){
-    pinMode(row_pins[r], INPUT_PULLUP);
+  for(uint8_t h = 0; h != NUM_HANDS; h++){
+    for(uint8_t r = 0; r != NUM_ROWS; r++){
+      pinMode(row_pins[h][r], INPUT_PULLUP);
+    }
+    for(char c = 0; c != NUM_COLS; c++){
+      pinMode(col_pins[h][c], HI_Z);
+    }
   }
-  for(char c = 0; c != NUM_COLS; c++){
-    pinMode(col_pins[c], HI_Z);
-  }
-
   repeat_delay_timer = REPEAT_DELAY;
   repeat_period_timer = REPEAT_PERIOD;
   last_change_was_press = false;
   Timer1.initialize(2083); //microsecs. multiple of 48MHz period.
   Timer1.attachInterrupt(decrement_timers);
-  // intialize serial?
+  // intialize serial? seems to work out-of-the-box
   //  intialize bluetooth;
 
 } 
@@ -66,6 +68,7 @@ void loop() {
 
   scanMatrix();
   checkForChanges();
+
   // Serial.println(state);
     // uint32_t F_MASK = 1<<1;
     // Serial.println(F_MASK);
@@ -73,16 +76,7 @@ void loop() {
   
   // if(chord_timer == 0 || repeat_period_timer == 0){
   if(chord_timer == 0){
-    
-    // Keyboard.set_key1(0);
-    // Keyboard.set_key2(0);
-    // Keyboard.set_key3(0);
-    // Keyboard.set_key4(0);
-    // Keyboard.set_key5(0);
-    // Keyboard.set_key6(0);
-    // Keyboard.set_modifier(0);
-    // Keyboard.send_now();
-    translate_and_send(state);
+        translate_and_send(state);
   }
   last_state = state;
   //wait briefly?
@@ -93,33 +87,38 @@ void scanMatrix(){
   state = 0;
   int i = 0;
   bool val = 0;
-  for (int c = 0; c != NUM_COLS; c++){
-    // Serial.println(r);
-    pinMode(col_pins[c], OUTPUT);
-    digitalWrite(col_pins[c], LOW);
-    delayMicroseconds(10); //todo find minimum, if things are slow
+  for (uint8_t h = 0; h != NUM_HANDS; h++){
+
+    for (uint8_t c = 0; c != NUM_COLS; c++){
+      // Serial.println(r);
+      pinMode(col_pins[h][c], OUTPUT);
+      digitalWrite(col_pins[h][c], LOW);
+      delayMicroseconds(10); //todo find minimum, if things are slow
     
-    for(int r = 0; r != NUM_ROWS; r++){
-      //true if high
-      val = (digitalRead(row_pins[r]) == LOW); //combine lines, don't use bool
-      state ^= (-val ^ state) & 1<<i; //set i'th bit to switch value
-      i++;
-      // if (val){
-      // 	Serial.println("BLARGH");
-      // }
+      for(uint8_t r = 0; r != NUM_ROWS; r++){
+	//true if high
+	val = (digitalRead(row_pins[h][r]) == LOW); //combine lines, don't use bool
+	state ^= (-val ^ state) & 1<<i; //set i'th bit to switch value
+	i++;
+	if (val && state != last_state){
+		Serial.print(r);
+		Serial.print(", ");
+		Serial.println(c);
+	}
       }
-    pinMode(col_pins[c], HI_Z);
+      pinMode(col_pins[h][c], HI_Z);
+    }
   }
 }
 
 void send(char letter, int flag_ctrl){
-  Serial.print("(");
-  if (flag_ctrl){
-    Serial.print("^");
-  }
-  Serial.print(letter);
-  Serial.print(")");
-  Serial.println(chord_timer);
+  // Serial.print("(");
+  // if (flag_ctrl){
+  //   Serial.print("^");
+  // }
+  // Serial.print(letter);
+  // Serial.print(")");
+  // Serial.println(chord_timer);
 
   Keyboard.set_key1(letter);
   Keyboard.set_key2(0);
@@ -150,8 +149,8 @@ void send(char letter, int flag_ctrl){
 }
 
 void translate_and_send(uint32_t _state){
-  Serial.print("transend! ");
-  Serial.print(_state);
+  // Serial.print("transend! ");
+  // Serial.print(_state);
   
 
   uint32_t CTRL_MASK = 1<<0;  
@@ -163,12 +162,10 @@ void translate_and_send(uint32_t _state){
   //blank out mods except shift, set mod flags
   int flag_ctrl = _state & CTRL_MASK && 1;		//KEY_leftcontrol
   _state &= ~CTRL_MASK; //blank out ctrl bit
-  Serial.print(", ");
-  Serial.println(_state);
-  // Serial.println("key_a");
-  // Serial.println(KEY_B);
-
-  if (!_state){
+  // Serial.print(", ");
+  // Serial.println(_state);
+  
+    if (!_state){
   //if everything was released, don't send anything
   // todo think about how this interacts with mods
     send(0, flag_ctrl);
@@ -188,8 +185,8 @@ void translate_and_send(uint32_t _state){
     send(KEY_P, flag_ctrl);
   }
   else{
-    Serial.print("BAD STATE: ");
-    Serial.print(_state);
+    // Serial.print("BAD STATE: ");
+    // Serial.print(_state);
     send(0, flag_ctrl);
   }
   return;

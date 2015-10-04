@@ -2,7 +2,7 @@
 
 import re
 
-# Format of keymap.cfg:
+# Format of .kmap file:
 # 
 # lines beginning with # are ignored
 # period is not-pressed, and any alphanumeric character is pressed
@@ -24,7 +24,6 @@ import re
 
 bit_order = range(32);
 PADWIDTH = 10; #22 keys, uint32
-
 
 
 ########## structure of .c file
@@ -128,5 +127,5 @@ def write_c(map):
     f_c.write( bottom_str)
 
 
-map = parse_new_format("keymap")
+map = parse_new_format("keymaps/smalldvorak.kmap")
 write_c(map)
