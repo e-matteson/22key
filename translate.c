@@ -1,41 +1,85 @@
 //#include avr stuff? 
-void translate(uint32_t state){
+#define SHIFT_SWITCH_NUM 26 
+void translate(uint32_t _state){
 
     //blank out mods except shift, set mod_byte
 
-  if(masked _state == 139296){		//KEY_leftcontrol
-    mod_byte |= 1;
- }
 
   //exact matches that depend on shift, some are macros
 
-  if(_state == 24580){		//macro_paren
-    send(38, 1, mod_byte);
-    send(39, 1, mod_byte);
-    send(80, 0, mod_byte);
-  }
 
   //matches disregarding shift
-  set shift_flag, blank out shift bit in _state
-  if(_state == 1056784){		//KEY_E
-    send(8, shift_flag, mod_byte);
-  }
-  if(_state == 2105376){		//KEY_D
+  //set shift_flag, clear shift bit in state
+  bool shift_flag=_state && 1<<SHIFT_SWITCH_NUM; 
+  _state &= ~ 1<<SHIFT_SWITCH_NUM;
+  if(_state == 32768){		//KEY_d
     send(7, shift_flag, mod_byte);
   }
-  if(_state == 270340){		//KEY_G
+  if(_state == 131072){		//KEY_g
     send(10, shift_flag, mod_byte);
   }
-  if(_state == 532488){		//KEY_F
+  if(_state == 65536){		//KEY_f
     send(9, shift_flag, mod_byte);
   }
-  if(_state == 73744){		//KEY_I
+  if(_state == 8192){		//KEY_a
+    send(4, shift_flag, mod_byte);
+  }
+  if(_state == 16384){		//KEY_b
+    send(5, shift_flag, mod_byte);
+  }
+  if(_state == 4){		//KEY_m
+    send(16, shift_flag, mod_byte);
+  }
+  if(_state == 1){		//KEY_v
+    send(25, shift_flag, mod_byte);
+  }
+  if(_state == 4096){		//KEY_o
+    send(18, shift_flag, mod_byte);
+  }
+  if(_state == 128){		//KEY_n
+    send(17, shift_flag, mod_byte);
+  }
+  if(_state == 1048576){		//KEY_i
     send(12, shift_flag, mod_byte);
   }
-  if(_state == 40968){		//KEY_J
+  if(_state == 512){		//KEY_h
+    send(11, shift_flag, mod_byte);
+  }
+  if(_state == 8){		//KEY_k
+    send(14, shift_flag, mod_byte);
+  }
+  if(_state == 16){		//KEY_j
     send(13, shift_flag, mod_byte);
+  }
+  if(_state == 1024){		//KEY_u
+    send(24, shift_flag, mod_byte);
+  }
+  if(_state == 256){		//KEY_t
+    send(23, shift_flag, mod_byte);
+  }
+  if(_state == 2){		//KEY_w
+    send(26, shift_flag, mod_byte);
+  }
+  if(_state == 3072){		//KEY_q
+    send(20, shift_flag, mod_byte);
+  }
+  if(_state == 262144){		//KEY_p
+    send(19, shift_flag, mod_byte);
+  }
+  if(_state == 64){		//KEY_s
+    send(22, shift_flag, mod_byte);
+  }
+  if(_state == 2097152){		//KEY_x
+    send(27, shift_flag, mod_byte);
+  }
+  if(_state == 524288){		//KEY_y
+    send(28, shift_flag, mod_byte);
+  }
+  if(_state == 2048){		//KEY_e
+    send(8, shift_flag, mod_byte);
   }
   else{
     //only mods are down
-    send(0, shift_flag, mod_byte);}
+    send(0, shift_flag, mod_byte);
+  }
 }

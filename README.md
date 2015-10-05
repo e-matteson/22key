@@ -22,7 +22,9 @@ Unfinished.
   * make press_delay short enough the tap detection is unnecessary? probly requires hand synchronization to be too tight.
   * 
 
-want to mount and wire stuff. don't have enough protoboard? annoying. can mechanically mount switches, keep breadboard for now.
+* usb/Keyboard uses key names, BLEfriend uses HID codes (right?)
+  * figure out best way to handle both.
+
 
 mount ideas:
 * flat wood top, cardboard buttresses underneath fit to leg curve
