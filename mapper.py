@@ -20,8 +20,6 @@ import re
 #     13 12 11 10         9  8  7  6
 #           5  4  3    2  1  0
 
-
-
 bit_order = range(32);
 PADWIDTH = 10; #22 keys, uint32
 
@@ -44,6 +42,7 @@ bottom_str = "  else{\n    //only mods are down\n    send(0, shift_flag, mod_byt
 
 
 ########## HID usage code / macro dictionaries
+# ok lets make all shift pairs explicit. no assumptions about upper/lowercase letters always being paired.
 
 plain_codes = dict(KEY_A=4, KEY_B=5, KEY_C=6, KEY_D=7, KEY_E=8, KEY_F=9, KEY_G=10, KEY_H=11, KEY_I=12, KEY_J=13, KEY_K=14, KEY_L=15, KEY_M=16, KEY_N=17, KEY_O=18, KEY_P=19, KEY_Q=20, KEY_R=21, KEY_S=22, KEY_T=23, KEY_U=24, KEY_V=25, KEY_W=26, KEY_X=27, KEY_Y=28, KEY_Z=29, KEY_enter=40, KEY_delete=42, KEY_tab=43, KEY_space=44, KEY_capslock=57, KEY_F1=58, KEY_F2=59, KEY_F3=60, KEY_F4=61, KEY_F5=62, KEY_F6=63, KEY_F7=64, KEY_F8=65, KEY_F9=66, KEY_F10=67, KEY_F11=68, KEY_F12=69, KEY_home=74, KEY_pageup=75, KEY_end=77, KEY_pagedown=78, KEY_right=79, KEY_left=80, KEY_down=81, KEY_up=82)
 
@@ -56,45 +55,92 @@ modifiers =  dict(KEY_leftcontrol=1, KEY_leftalt=4) #not usage codes, bitmasks f
 # modifiers =  {KEY_LeftControl=224, KEY_LeftShift=225, KEY_LeftAlt=226, KEY_Escape=41}
 
 
-def parse_original_format(filename):
-    f_cfg = open(filename, 'r')
-    
-    # parse keymap file
-    text = f_cfg.read()
-    text = re.sub('\.', '0', text)
-    text = re.sub('x', '1', text)
-    map = re.findall('^((?:[^#\n]+\n){4})', text, flags=re.MULTILINE)
-    map =  [re.split('\s+', x.strip()) for x in map]
-    return map
+def gather_4_lines(f_cfg):
+    lines=[]
+    found_shifted_command = False
+    while len(lines) < 4:
+        l = f_cfg.readline()
+        if l == "":
+            # EoF
+            break
+        if(l[0].strip() != "#"  and l.strip() != ""):
+            if l.split()[0].strip() == "shifted":
+                # reached the end of the layout images,
+                # we're in the "shifted" command region now
+                found_shifted_command = True
+                break
+            # else this is part of a keymap image
+            lines.append(re.split('[ \t]+', l.strip()))
+    return (lines, found_shifted_command)
 
-def parse_new_format(filename):
+def lines_to_dict_of_1hot_switch_lists(lines):
+    map_subdictionary = {}
+    for b in range(len(lines[0])):
+        switch_list = []
+        [switch_list.extend(lines[row][b*2:b*2+2]) for row in range(1,4)]
+        # print '*************************'
+        # print switch_list
+        switch_list = [re.sub('\.', '0', c) for c in switch_list]
+        switch_list = [re.sub('[^0]', '1', c) for c in switch_list]
+        switch_list = list('0'*PADWIDTH + ''.join(switch_list))
+        map_subdictionary[lines[0][b]] = switch_list
+    return map_subdictionary
+
+    
+def parse_kmap(filename):
     f_cfg = open(filename, 'r')
     map = {}
+    in_shifted_region = False
+    shifted_dict = {}
     while 1:
         lines = []
-        while len(lines) < 4:
+        if not in_shifted_region:
+            # gather up 4 lines, parse the keymaps in each column
+            # store one-hot list of activated switches in map
+            (lines,in_shifted_region) = gather_4_lines(f_cfg)
+            if len(lines) != 4: # 
+                print "WARNING: lines ignored in keymap"
+                print lines
+                continue
+                # raise Exception("todo handle this better")
+                      
+            map.update(lines_to_dict_of_1hot_switch_lists(lines))
+        else:
+            print "SHIFT"
             l = f_cfg.readline()
+            # parse the "shifted" commands
             if l == "":
-                if len(lines) != 0:
-                    print "WARNING: lines ignored at end of file"
-                return map
-                
-            if(l[0].strip() != "#"  and l.strip() != ""):
-                # print "something: %s" % l
-                lines.append(re.split('[ \t]+', l.strip()))
+                # EoF
+                break
+            if l.strip() != "" and l.split()[0] == "shifted":
+                # not blank line, is a line with a "shifted" command 
+                # from shifted -> unshifted
+                shifted_dict[l.split()[1]] = l.split()[2]
 
-        for b in range(len(lines[0])):
-            chunks = []
-            [chunks.extend(lines[row][b*2:b*2+2]) for row in range(1,4)]
-            print '*************************'
-            print chunks
-            chunks = [re.sub('\.', '0', c) for c in chunks]
-            chunks = [re.sub('[^0]', '1', c) for c in chunks]
-            chunks = '0'*PADWIDTH + ''.join(chunks)
-            chunks = ''.join([chunks[j] for j in bit_order])
-            chunks = int(chunks,2)
-            map[lines[0][b]] = chunks
+    if shifted_dict:
+        # handle shifted commands
+        # shift must bound to exactly one switch
+        assert map["mod_shift"].count("1") ==1
+        shift_switch_num =  map["mod_shift"].index("1")
+        print shift_switch_num
+        # error
+        print shifted_dict
+        for shifted_name in shifted_dict.keys():
+            unshifted_name = shifted_dict[shifted_name]
+            print
+            print shifted_name
+            map[shifted_name] = map[unshifted_name]
+            map[shifted_name][shift_switch_num] = '1'
+            print map[shifted_name]
             
+    # turn all 1hot lists into ints representing state     
+    for name in map.keys():
+        print name
+        map[name] = ''.join([map[name][j] for j in bit_order]) # 
+        map[name] = int(map[name],2)
+        print map[name]
+        
+    return map
 
 # write c file
 # todo warn if there are unknown or missing keys in keymap file    
@@ -125,7 +171,9 @@ def write_c(map):
             f_c.write( if_str_plain % (map[name], name, plain_codes[name]) )
         
     f_c.write( bottom_str)
+    print "done writing translate.c"
 
 
-map = parse_new_format("keymaps/smalldvorak.kmap")
+map = parse_kmap("keymaps/smalldvorak.kmap")
+# print map
 write_c(map)
