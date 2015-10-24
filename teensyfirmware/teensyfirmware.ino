@@ -20,8 +20,10 @@
 //using input without pullup as hiZ state
 #define HI_Z INPUT
 
-uint8_t row_pins[NUM_HANDS][NUM_ROWS]= {{20, 21,22}, {7,8,9}};
-uint8_t col_pins[NUM_HANDS][NUM_COLS] = {{16, 17, 18, 19}, {3,4,5,6}};
+//uint8_t row_pins[NUM_HANDS][NUM_ROWS]= {{7,8,9}, {20, 21,22}};
+//uint8_t col_pins[NUM_HANDS][NUM_COLS] = {{3,4,5,6}, {16, 17, 18, 19}};
+uint8_t row_pins[NUM_HANDS][NUM_ROWS]= {{3,4,5}, {20, 21,22}};
+uint8_t col_pins[NUM_HANDS][NUM_COLS] = {{6,7,8,9}, {16, 17, 18, 19}};
 
 int32_t chord_timer;
 short repeat_delay_timer;
@@ -55,61 +57,41 @@ void setup() {
 } 
 
 void loop() {
-  Serial.println(KEY_A);
-  Serial.println(KEY_B);
-  // Serial.println(KEY_
-    
-
-  /**** TODO
-   * why is a -> ab -> a  non-deterministic? what should it be?
-   */
-  /* delay(50); */
-  /* Keyboard.set_key2(KEY_B); */
-  /* Keyboard.send_now(); */
-  /* delay(50); */
-  /* Keyboard.set_key1(0); */
-  /* Keyboard.set_key2(0); */
-  /* Keyboard.send_now(); */
-
-  // scanMatrix();
-  // checkForChanges();
-
-  // Serial.println(state);
-    // uint32_t F_MASK = 1<<1;
-    // Serial.println(F_MASK);
- 
+  scanMatrix();
+  checkForChanges();
   
-  // if(chord_timer == 0 || repeat_period_timer == 0){
-  // if(chord_timer == 0){
-  //       translate_and_send(state);
-  // }
-  // last_state = state;
-  //wait briefly?
+  /* Serial.println(state); */
+  if(chord_timer == 0 || repeat_period_timer == 0){
+    if(chord_timer == 0){
+      /* Serial.println(last_state); */
+      translate_and_send(state);
+    }
+    last_state = state;
+    //wait briefly?
+    //delay(100);
+  }
 }
-
 
 void scanMatrix(){
   state = 0;
   int i = 0;
   bool val = 0;
   for (uint8_t h = 0; h != NUM_HANDS; h++){
-
     for (uint8_t c = 0; c != NUM_COLS; c++){
-      // Serial.println(r);
       pinMode(col_pins[h][c], OUTPUT);
       digitalWrite(col_pins[h][c], LOW);
       delayMicroseconds(10); //todo find minimum, if things are slow
     
       for(uint8_t r = 0; r != NUM_ROWS; r++){
-	//true if high
-	val = (digitalRead(row_pins[h][r]) == LOW); //combine lines, don't use bool
-	state ^= (-val ^ state) & 1<<i; //set i'th bit to switch value
-	i++;
-	if (val && state != last_state){
-		Serial.print(r);
-		Serial.print(", ");
-		Serial.println(c);
-	}
+        //val is true if the switch is pressed
+        val = (digitalRead(row_pins[h][r]) == LOW); //combine lines, don't use bool
+        state ^= (-val ^ state) & 1<<i; //set i'th bit to switch value
+        i++;
+        /* if (val && state != last_state){ */
+        /*   Serial.print(r); */
+        /*   Serial.print(", "); */
+        /*   Serial.println(c); */
+        /* } */
       }
       pinMode(col_pins[h][c], HI_Z);
     }
@@ -138,6 +120,7 @@ void send(uint8_t letter, bool flag_shift, uint8_t mod_byte){
   if (flag_shift){
     Keyboard.set_modifier(MODIFIERKEY_SHIFT);
   }
+  // Keyboard.set_modifier(mod_byte);
   Keyboard.send_now();
   
   delay(50);
@@ -157,6 +140,7 @@ void send(uint8_t letter, bool flag_shift, uint8_t mod_byte){
 }
 
 void translate_and_send(uint32_t _state){
+  /* Serial.println(_state); */
     //blank out mods except shift, set mod_byte
   char mod_byte = 0;
   //exact matches that depend on shift, some are macros
@@ -233,6 +217,7 @@ void translate_and_send(uint32_t _state){
   }
   else{
     //only mods are down
+    Serial.println("else");
     send(0, shift_flag, mod_byte);
   }
 }
@@ -328,9 +313,9 @@ void checkForChanges(){
   else if (state_changes & last_state){    
     //SOMETHING WAS RELEASED
     if (last_change_was_press
-	&& chord_timer > 0
-	&& chord_timer <= (PRESS_DELAY-DEBOUNCE_DELAY)){
-	//switch was quickly tapped, force it to send last_state now
+        && chord_timer > 0
+        && chord_timer <= (PRESS_DELAY-DEBOUNCE_DELAY)){
+      //switch was quickly tapped, force it to send last_state now
       translate_and_send(last_state);
     }
     chord_timer = RELEASE_DELAY;
