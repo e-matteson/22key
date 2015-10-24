@@ -19,41 +19,48 @@ import re
 #     21 20 19 18         17 16 15 14
 #     13 12 11 10         9  8  7  6
 #           5  4  3    2  1  0
+#
+# scanMatrix bit order is:
+# [2, 14, 24-31 zero]
+#
+#     12 15 18 21         0  3  6  9
+#     13 16 19 22         1  4  7  10
+#           17 20 23   5  8  11
+#
+#
+bit_order =  range(31, 23, -1) + [3, 10, 18, 4, 11, 19, 5, 12, 20, 31, 13, 21, 0, 6, 14, 1, 7, 15, 2, 8, 16, 31, 9, 17]
+# bit_order =  [17, 9, 31, 16, 8, 2, 15, 7, 1, 14, 6, 0, 21, 13, 31, 20, 12, 5, 19, 11, 4, 18, 10, 3]
+#[31, 30, 29, 28, 27, 26, 25, 24, 17, 9,  ** 31, 16, 8,  2,  15, 7,  1,  14, 6,  0,  21, 13, 31, 20, 12, 5,  19, 11, 4,  18, 10, 3]
 
-bit_order = range(32);
+#[0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  ** 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+#[31, 30, 29, 28, 27, 26, 25, 24, 23, 22, ** 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,  0]
+#----------------------------------------------------------------------------------------------------------------------------------
+#[0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  ** 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 14
+
+# print range(32) 
+# print bit_order[::-1]
+bit_order = [31-b for b in bit_order]
+print len(bit_order)
+print bit_order
+x = [0]*32
+x[31-2] = 1
+# print ''.join([x[i] for i in bit_order])
+print [x[i] for i in bit_order]
+# bit_order = range(32);
+
 PADWIDTH = 10; #22 keys, uint32
 
-
-########## structure of .c file
-top_str = "//#include avr stuff? \n#define SHIFT_SWITCH_NUM %d \nvoid translate(uint32_t _state){\n\n    //blank out mods except shift, set mod_byte\n\n"
-
-if_str_mod = "  if(masked _state == %d){\t\t//%s\n    mod_byte |= %d;\n }\n"
-
-start_exact = "\n  //exact matches that depend on shift, some are macros\n\n"
-if_str_exact1 = "  if(_state == %d){\t\t//%s\n"
-if_str_exact2 = "    send(%d, %d, mod_byte);\n"
-if_str_exact3 = "  }\n"
-
-start_plain ="\n  //matches disregarding shift\n  //set shift_flag, clear shift bit in state\n  bool shift_flag=_state && 1<<SHIFT_SWITCH_NUM; \n  _state &= ~ 1<<SHIFT_SWITCH_NUM;\n"
-if_str_plain ="  if(_state == %d){\t\t//%s\n    send(%d, shift_flag, mod_byte);\n  }\n"
-
-bottom_str = "  else{\n    //only mods are down\n    send(0, shift_flag, mod_byte);}\n}"
 
 
 
 ########## HID usage code / macro dictionaries
-# ok lets make all shift pairs explicit. no assumptions about upper/lowercase letters always being paired.
 
-plain_codes = dict(KEY_a=4, KEY_b=5, KEY_c=6, KEY_d=7, KEY_e=8, KEY_f=9, KEY_g=10, KEY_h=11, KEY_i=12, KEY_j=13, KEY_k=14, KEY_l=15, KEY_m=16, KEY_n=17, KEY_o=18, KEY_p=19, KEY_q=20, KEY_r=21, KEY_s=22, KEY_t=23, KEY_u=24, KEY_v=25, KEY_w=26, KEY_x=27, KEY_y=28, KEY_z=29, KEY_enter=40, KEY_delete=42, KEY_tab=43, KEY_space=44, KEY_capslock=57, KEY_f1=58, KEY_f2=59, KEY_f3=60, KEY_f4=61, KEY_f5=62, KEY_f6=63, KEY_f7=64, KEY_f8=65, KEY_f9=66, KEY_f10=67, KEY_f11=68, KEY_f12=69, KEY_home=74, KEY_pageup=75, KEY_end=77, KEY_pagedown=78, KEY_right=79, KEY_left=80, KEY_down=81, KEY_up=82)
+shiftable_codes = dict(key_a=4, key_b=5, key_c=6, key_d=7, key_e=8, key_f=9, key_g=10, key_h=11, key_i=12, key_j=13, key_k=14, key_l=15, key_m=16, key_n=17, key_o=18, key_p=19, key_q=20, key_r=21, key_s=22, key_t=23, key_u=24, key_v=25, key_w=26, key_x=27, key_y=28, key_z=29, key_enter=40, key_delete=42, key_tab=43, key_space=44, key_capslock=57, key_f1=58, key_f2=59, key_f3=60, key_f4=61, key_f5=62, key_f6=63, key_f7=64, key_f8=65, key_f9=66, key_f10=67, key_f11=68, key_f12=69, key_home=74, key_pageup=75, key_end=77, key_pagedown=78, key_right=79, key_left=80, key_down=81, key_up=82)
 
 shift = 1
-exact_codes = dict(KEY_1=[(30,0)], KEY_2=[(31,0)], KEY_3=[(32,0)], KEY_4=[(33,0)], KEY_5=[(34,0)], KEY_6=[(35,0)], KEY_7=[(36,0)], KEY_8=[(37,0)], KEY_9=[(38,0)], KEY_0=[(39,0)], KEY_bang=[(30,1)], KEY_at=[(31,shift)], KEY_hash=[(32,shift)], KEY_dollar=[(33,shift)], KEY_percent=[(34,shift)], KEY_caret=[(35,shift)], KEY_ampersand=[(36,shift)], KEY_asterisk=[(37,shift)], KEY_minus=[(45,0)], KEY_underscore=[(45,shift)],  KEY_equals=[(46,0)], KEY_plus=[(46,shift)], KEY_backslash=[(49,0)], KEY_pipe=[(49,shift)], KEY_semicolon=[(51,0)],  KEY_colon=[(51,shift)], KEY_quote=[(52,0)], KEY_doublequote=[(52,shift)], KEY_grave=[(53,0)], KEY_tilde=[(53,shift)], KEY_comma=[(54,0)], KEY_leftangle=[(54,shift)], KEY_period=[(55,0)],  KEY_rightangle=[(55,shift)], KEY_slash=[(56,0)], KEY_question=[(56,shift)], macro_bracket=[(47,0),(48,0),(80,0)], macro_curly=[(47,shift),(48,shift),(80,0)], macro_paren=[(38,shift),(39,shift),(80,0)])
+exact_codes = dict(key_1=[(30,0)], key_2=[(31,0)], key_3=[(32,0)], key_4=[(33,0)], key_5=[(34,0)], key_6=[(35,0)], key_7=[(36,0)], key_8=[(37,0)], key_9=[(38,0)], key_0=[(39,0)], key_bang=[(30,1)], key_at=[(31,shift)], key_hash=[(32,shift)], key_dollar=[(33,shift)], key_percent=[(34,shift)], key_caret=[(35,shift)], key_ampersand=[(36,shift)], key_asterisk=[(37,shift)], key_minus=[(45,0)], key_underscore=[(45,shift)],  key_equals=[(46,0)], key_plus=[(46,shift)], key_backslash=[(49,0)], key_pipe=[(49,shift)], key_semicolon=[(51,0)],  key_colon=[(51,shift)], key_quote=[(52,0)], key_doublequote=[(52,shift)], key_grave=[(53,0)], key_tilde=[(53,shift)], key_comma=[(54,0)], key_leftangle=[(54,shift)], key_period=[(55,0)],  key_rightangle=[(55,shift)], key_slash=[(56,0)], key_question=[(56,shift)], macro_bracket=[(47,0),(48,0),(80,0)], macro_curly=[(47,shift),(48,shift),(80,0)], macro_paren=[(38,shift),(39,shift),(80,0)])
 
-modifiers =  dict(KEY_leftcontrol=1, KEY_leftalt=4) #not usage codes, bitmasks for mod_byte!
-# todo shift (and escape?) is special
- # KEY_LeftShift=225,    KEY_Escape=41 
-# modifiers =  {KEY_LeftControl=224, KEY_LeftShift=225, KEY_LeftAlt=226, KEY_Escape=41}
-# mod_shift is a special case
+modifiers =  dict(key_ctrl="MODIFIERKEY_CTRL", key_alt="MODIFIERKEY_ALT", key_gui="MODIFIERKEY_GUI", key_shift="MODIFIERKEY_SHIFT")
 
 def gather_4_lines(f_cfg):
     lines=[]
@@ -83,10 +90,11 @@ def lines_to_dict_of_1hot_switch_lists(lines):
         switch_list = [re.sub('\.', '0', c) for c in switch_list]
         switch_list = [re.sub('[^0]', '1', c) for c in switch_list]
         switch_list = list('0'*PADWIDTH + ''.join(switch_list))
+        # print switch_list
         map_subdictionary[lines[0][b]] = switch_list
     return map_subdictionary
 
-    
+
 def parse_kmap(filename):
     f_cfg = open(filename, 'r')
     map = {}
@@ -115,11 +123,11 @@ def parse_kmap(filename):
                 # EoF
                 break
             if l.strip() != "" and l.split()[0] == "shifted":
-                # not blank line, is a line with a "shifted" command 
+                # not blank line, is a line with a "shifted" command
                 #  dict: shifted -> unshifted
                 shifted_dict[l.split()[1]] = l.split()[2]
-                
-    # shift must bound to exactly one switch                
+
+    # shift must bound to exactly one switch
     assert map["mod_shift"].count("1") ==1
     shift_switch_num =  map["mod_shift"].index("1")
     if shifted_dict:
@@ -134,30 +142,49 @@ def parse_kmap(filename):
             map[shifted_name] = map[unshifted_name]
             map[shifted_name][shift_switch_num] = '1'
             print map[shifted_name]
-            
-    # turn all 1hot lists into ints representing state     
+
+    # turn all 1hot lists into ints representing state 
     for name in map.keys():
         print name
-        map[name] = ''.join([map[name][j] for j in bit_order]) # 
-        map[name] = int(map[name],2)
+        print ''.join(map[name])
+        map[name] = ''.join([map[name][j] for j in bit_order]) 
         print map[name]
-        
+        map[name] = int(map[name],2)
+    print map
     return (map, shift_switch_num)
 
+########## structure of .c file
+top_str1 = "#define SHIFT_SWITCH_NUM %d \n#define CTRL_SWITCH_NUM %d \n#define ALT_SWITCH_NUM %d \n#define GUI_SWITCH_NUM %d \n"
+top_str2 = "void translate(uint32_t _state){\n\n "
+top_str3 = "   //blank out mods except shift, set mod_byte\n\n"
+if_str_mod = "  if(masked _state == %d){\t\t//%s\n    mod_byte |= %d;\n }\n"
+
+start_exact = "\n  //exact matches that depend on shift, some are macros\n\n"
+if_str_exact1 = "  if(_state == %d){\t\t//%s\n"
+if_str_exact2 = "    send(%d, %d, mod_byte);\n"
+if_str_exact3 = "  }\n"
+
+start_plain ="\n  //matches disregarding shift\n  //set shift_flag, clear shift bit in state\n  bool shift_flag=_state && 1<<SHIFT_SWITCH_NUM; \n  _state &= ~ 1<<SHIFT_SWITCH_NUM;\n"
+if_str_plain ="  if(_state == %d){\t\t//%s\n    send(%d, shift_flag, mod_byte);\n  }\n"
+
+bottom_str = "  else{\n    //only mods are down\n    send(0, shift_flag, mod_byte);}\n}"
+
 # write c file
-# todo warn if there are unknown or missing keys in keymap file    
+# todo warn if there are unknown or missing keys in keymap file
 def write_c(map, shift_switch_num):
     f_c = open('translate.c', 'w')
-    plain_keys = plain_codes.keys()
+    shiftable_keys = shiftable_codes.keys()
     exact_keys = exact_codes.keys()
     modifier_keys = modifiers.keys()
+    print map 
+    exit(1)
     map_keys = map.keys()
-    
+
     f_c.write(top_str % shift_switch_num)
     for name in modifier_keys:
         if name in map_keys:
             f_c.write( if_str_mod % (map[name], name, modifiers[name]) )
-            
+
     f_c.write(start_exact)
     for name in exact_keys:
         if name in map_keys:
@@ -167,15 +194,15 @@ def write_c(map, shift_switch_num):
                 f_c.write( if_str_exact2 % (k[0], k[1]) )
             f_c.write( if_str_exact3)
 
-    f_c.write(start_plain)            
-    for name in plain_keys:
+    f_c.write(start_plain)
+    for name in shiftable_keys:
         if name in map_keys:
-            f_c.write( if_str_plain % (map[name], name, plain_codes[name]) )
-        
+            f_c.write( if_str_plain % (map[name], name, shiftable_codes[name]) )
+
     f_c.write( bottom_str)
     print "done writing translate.c"
 
 
 (map, shift_switch_num) = parse_kmap("keymaps/smalldvorak.kmap")
-# print map
+print map
 write_c(map, shift_switch_num)
