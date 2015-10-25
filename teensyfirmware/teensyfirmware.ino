@@ -1,41 +1,52 @@
 #include <TimerOne.h>
-#define CHORD_DELAY    25   // * ~2ms
+
+// maximum values of the countdown timers
+#define CHORD_DELAY    25   
 #define HELD_DELAY     200
-#define REPEAT_DELAY   20000
-#define REPEAT_PERIOD  50
-#define DEBOUNCE_DELAY 1     //only applies to quick tap/release
+#define REPEAT_DELAY   400
+#define REPEAT_PERIOD  15
 
+// units for timers
+#define TIMER_TICK     2083  //microsecs. 2083 is multiple of 48MHz period.
 
-#define PRESSED       1  // pressed and not sent yet
-#define ALREADY_SENT  2  // sent, don't resend
-#define HELD          3  // sent, but ok to resend
-/* #define TAPPED        4  // released before chord timer ran out, please send */
-#define NOT_PRESSED   0  // not currently pressed
-// #define PLEASE_SEND_LAST_STATE -4
+//keyboard size
 #define NUM_ROWS 3
 #define NUM_COLS 4
 #define NUM_HANDS 2
-//there's 22 physical switches, but the array must hold all 24 row/col/hand combos
+//(there's 22 physical switches, but the array must fit all 24 row/col/hand combos)
 #define NUM_SWITCHES NUM_ROWS*NUM_COLS*NUM_HANDS 
-//using input without pullup as hiZ state
-#define HI_Z INPUT
 
+//using input without pullup as hiZ state
+#define HI_Z INPUT 
+
+//possible statuses for the status_array
+enum status_t{
+  DEBOUNCE,        // newly pressed, might be a bounce (increase delay at end of loop if there's still bounce)
+  PRESSED,         // pressed and not sent yet
+  ALREADY_SENT,    // sent, don't resend
+  HELD,            // sent, but ok to resend
+  NOT_PRESSED,     // not currently pressed
+};
+
+//teensy LC I/O pin numbers
 uint8_t row_pins[NUM_HANDS][NUM_ROWS]= {{3,4,5}, {20, 21,22}};
 uint8_t col_pins[NUM_HANDS][NUM_COLS] = {{6,7,8,9}, {16, 17, 18, 19}};
 
+//variables to hold timer values
 int32_t chord_timer;
 int32_t held_timer;
 int32_t repeat_delay_timer;
 int32_t repeat_period_timer;
 uint32_t standby_timer;
-uint32_t state = 0;
-bool pressed_array[NUM_SWITCHES];
-uint8_t status_array[NUM_SWITCHES];
-bool is_any_switch_pressed;
+
+bool pressed_array[NUM_SWITCHES];    //simple boolean values, set by scanMatrix()
+status_t status_array[NUM_SWITCHES]; //used in a state machine for complex behaviors
+
+bool is_any_switch_pressed;           //flag used by decrement_timers()
+
 
 void setup() {
-// row_pins
-//initialize rows and columns - todo both hands
+//initialize pins for rows and columns of keyboard matrix
   for(uint8_t h = 0; h != NUM_HANDS; h++){
     for(uint8_t r = 0; r != NUM_ROWS; r++){
       pinMode(row_pins[h][r], INPUT_PULLUP);
@@ -44,48 +55,37 @@ void setup() {
       pinMode(col_pins[h][c], HI_Z);
     }
   }
+  //initialize switch statuses
   for(uint8_t i = 0; i != NUM_SWITCHES; i++){
     status_array[i] = NOT_PRESSED;
   }
+  //initialize flag
+  is_any_switch_pressed = 0;
+
+  //initialize timers
   chord_timer = -1;
   held_timer = -1;
   repeat_delay_timer = REPEAT_DELAY;
   repeat_period_timer = REPEAT_PERIOD;
-  is_any_switch_pressed = 0;
-
-  Timer1.initialize(2083); //microsecs. multiple of 48MHz period.
-  /* Timer1.initialize(2083*10000); //microsecs. multiple of 48MHz period. */
+  Timer1.initialize(TIMER_TICK); //microsecs
   Timer1.attachInterrupt(decrement_timers);
-  // intialize serial? seems to work out-of-the-box
-  //  intialize bluetooth;
-
+  //todo: intialize serial? seems to work out-of-the-box
 }
 
 void loop() {
   scanMatrix();
-  checkForChanges();
+  updateSwitchStatuses();
+
   if(held_timer == 0){
-    for(uint8_t i = 0; i!= NUM_SWITCHES; i++){
-      if(status_array[i] == ALREADY_SENT){
-        status_array[i] = HELD;
-      }
-    }
+    checkForHeldSwitches();
   }
-  /* if(chord_timer == 0 || repeat_period_timer == 0){ */
-  if(chord_timer == 0){
-    state = 0;
-    for(uint8_t i = 0; i!= NUM_SWITCHES; i++){
-      if(status_array[i] == ALREADY_SENT){
-        Serial.println(held_timer);
-      }
-      if (status_array[i] == PRESSED || status_array[i] == HELD){
-        state |= 1<<i;
-        status_array[i] = ALREADY_SENT;
-      }
-    }
-    translate_and_send(state);
+
+  if(chord_timer == 0 || repeat_period_timer == 0){
+    // translation is implemented in a separate file
+    translateAndSendState(getState());
   }
-  //wait briefly?
+  //wait briefly? helps with debouncing
+  delay(2); //millisecs
 }
 
 void scanMatrix(){
@@ -96,17 +96,9 @@ void scanMatrix(){
       pinMode(col_pins[h][c], OUTPUT);
       digitalWrite(col_pins[h][c], LOW);
       delayMicroseconds(10); //todo find minimum, if things are slow
- 
       for(uint8_t r = 0; r != NUM_ROWS; r++){
         //true if the switch is pressed
         pressed_array[i] = (digitalRead(row_pins[h][r]) == LOW);
-
-        /* if (pressed_array[i]){ */
-        /*   Serial.print(r); */
-        /*   Serial.print(", "); */
-        /*   Serial.println(c); */
-        /*   Serial.println(i); */
-        /* } */
         i++;
       }
       pinMode(col_pins[h][c], HI_Z);
@@ -117,61 +109,98 @@ void scanMatrix(){
 /* if something changed, reset timers and set flags 
  * if a switch was tapped and released, send the last_state immediately
  */
-void checkForChanges(){
-  /* state_changes = state ^ last_state; */
-  state = 0;
+void updateSwitchStatuses(){
   is_any_switch_pressed = 0;
   for(uint8_t i=0; i!=NUM_SWITCHES; i++){
     if(!pressed_array[i]){
       // switch is NOT pressed
       switch(status_array[i]){
+
       case NOT_PRESSED:
+      case DEBOUNCE:
+        status_array[i] = NOT_PRESSED;
         break;
+
       case ALREADY_SENT:
-        held_timer = HELD_DELAY;
-        status_array[i] = NOT_PRESSED;
-        break;
       case HELD:
-        held_timer = HELD_DELAY;
+        //switch was released, and it was already sent previously
         status_array[i] = NOT_PRESSED;
+        resetInactivityTimers();
         break;
+
       case PRESSED:
-        held_timer = HELD_DELAY;
-        if (chord_timer <= (CHORD_DELAY - DEBOUNCE_DELAY)){
-          //this is a quick tap and should be sent
-          status_array[i] = PRESSED;
-          // force a send during this loop
-          chord_timer = 0;
-          break;
-        }
+        //switch was quickly tapped and released, and should be sent now
+        status_array[i] = PRESSED;
+        chord_timer = 0; //force send
+        resetInactivityTimers();
+        break;
       }
     }
     else if(pressed_array[i]){
       // switch IS pressed
       is_any_switch_pressed = 1;
       switch(status_array[i]){
-      case NOT_PRESSED:
-        //new press
-        chord_timer = CHORD_DELAY;
-        held_timer = HELD_DELAY;
-        status_array[i] = PRESSED;
-        break;
+
       case ALREADY_SENT:
-        break;
       case HELD:
-        break;
       case PRESSED:
+        break;
+
+      case NOT_PRESSED:
+        //maybe it's a new press, debounce it first
+        status_array[i] = DEBOUNCE;
+        break;
+
+      case DEBOUNCE:
+        //new press
+        status_array[i] = PRESSED;
+        chord_timer = CHORD_DELAY;
+        resetInactivityTimers();
         break;
       }
     }
   }
 }
 
-void send(uint8_t letter, uint8_t mod_byte){
+void resetInactivityTimers(){
+  //call this when something changes, to reset the timers that check for changes
+  held_timer = HELD_DELAY;
+  repeat_delay_timer = REPEAT_DELAY;
+  repeat_period_timer = REPEAT_PERIOD;
+  //todo put standby timer in here too
+}
+
+void checkForHeldSwitches(){
+  // if any switches have been held down for a while, let them be re-sent
+  //  in future chords.
+  for(uint8_t i = 0; i!= NUM_SWITCHES; i++){
+    if(status_array[i] == ALREADY_SENT){
+      status_array[i] = HELD;
+    }
+  }
+}
+
+uint32_t getState(){
+  //construct a binary representation of the keyboard state from the status_array
+  uint32_t state_to_send = 0;
+  for(uint8_t i = 0; i!= NUM_SWITCHES; i++){
+    if (status_array[i] == PRESSED){
+      state_to_send |= 1<<i; //add to state, so it will be sent
+      status_array[i] = ALREADY_SENT;
+    }
+    else if(status_array[i] == HELD){
+      state_to_send |= 1<<i; //add to state, so it will be sent
+      //keep status as HELD
+    }
+  }
+  return state_to_send; 
+}
+
+void sendOverUSB(uint32_t key_code, uint8_t mod_byte){
   //but Keyboard uses names, BLE uses usage codes...
   Serial.print("sending:");
-  Serial.println(letter);
-  Keyboard.set_key1(letter);
+  Serial.println(key_code);
+  Keyboard.set_key1(key_code);
   Keyboard.set_key2(0);
   Keyboard.set_key3(0);
   Keyboard.set_key4(0);
@@ -180,7 +209,7 @@ void send(uint8_t letter, uint8_t mod_byte){
   Keyboard.set_modifier(mod_byte);
   Keyboard.send_now();
   
-  delay(50);
+  delay(1); //millisecs
   Keyboard.set_key1(0);
   Keyboard.set_key2(0);
   Keyboard.set_key3(0);
@@ -195,21 +224,15 @@ void send(uint8_t letter, uint8_t mod_byte){
   repeat_period_timer = REPEAT_PERIOD;
 }
 
-
- 
 void decrement_timers(){
+  //check all timers, and decrement them if necessary
   if(chord_timer > 0){
-    //countdown from CHORD_DELAY to 0
-    /* if (!(chord_timer % 5)){ */
-    /* Serial.println(chord_timer); */
-    /* } */
     chord_timer--;
   }
   if(held_timer > 0) {
     held_timer--;
   }
-  if (is_any_switch_pressed){ // at least 1 switch is pressed
-    /* standby_timer = STANDBY_DELAY; */
+  if (is_any_switch_pressed){ 
     if (repeat_delay_timer > 0){
       //countdown from REPEAT_DELAY to 0
       repeat_delay_timer--;
@@ -220,8 +243,4 @@ void decrement_timers(){
     } 
   }
 }
-
-
-
-
 

@@ -186,27 +186,26 @@ def parse_kmap(filename):
 
 
 ########## structure of .c file
-top_str1 = "#define SHIFT_SWITCH_NUM %d \n#define CTRL_SWITCH_NUM %d \n#define ALT_SWITCH_NUM %d \n#define GUI_SWITCH_NUM %d \n\n"
-top_str2 = "void translate_and_send(uint32_t _state){\n"
-top_str3 = "  //blank out mods except shift, set mod_byte\n  char mod_byte = 0;\n"
+top_str1 = "void translateAndSendState(uint32_t state){\n"
+top_str2 = "  //blank out mods except shift, set mod_byte\n  char mod_byte = 0;\n"
 
-if_str_mod1 = "  if(_state & 1<<%d){\t\t//%s\n"
-if_str_mod2 = "    mod_byte |= %s;\n    _state &= ~ (1<<%d);\n  }\n"  
-if_str_zero = "  if(_state == 0){\n    send(0, mod_byte);\n    return;\n}"
+if_str_mod1 = "  if(state & 1<<%d){\t\t//%s\n"
+if_str_mod2 = "    mod_byte |= %s;\n    state &= ~ (1<<%d);\n  }\n"  
+if_str_zero = "  if(state == 0){\n    sendOverUSB(0, mod_byte);\n    return;\n}"
 
 start_exact = "\n  //exact matches that depend on shift, some are macros\n\n"
-if_str_exact1 = "  if(_state == %d){\t\t//%s\n"
-if_str_exact2 = "    send(%s, mod_byte %s);\n"
+if_str_exact1 = "  if(state == %d){\t\t//%s\n"
+if_str_exact2 = "    sendOverUSB(%s, mod_byte %s);\n"
 if_str_exact3 = "    return;\n  }\n"
 
 start_plain1 = "\n  //matches disregarding shift\n  //set shift_flag, clear shift bit in state\n"
-start_plain2 = "  if(_state & 1<<%d){\n   mod_byte |= MODIFIERKEY_SHIFT;\n  }\n"
-start_plain3 = "  _state &= ~ (1<<%d);\n"
-if_str_plain1 ="  if(_state == %d){\t\t//%s\n"
-if_str_plain2 ="    send(%s, mod_byte);\n    return;\n  }\n"
+start_plain2 = "  if(state & 1<<%d){\n   mod_byte |= MODIFIERKEY_SHIFT;\n  }\n"
+start_plain3 = "  state &= ~ (1<<%d);\n"
+if_str_plain1 ="  if(state == %d){\t\t//%s\n"
+if_str_plain2 ="    sendOverUSB(%s, mod_byte);\n    return;\n  }\n"
 
 bottom_str1 = "  //else unknown combo, or only mods are down\n  Serial.println(\"warning: unknown switch combination\");\n"
-bottom_str2 = "  send(0, mod_byte);\n}"
+bottom_str2 = "  sendOverUSB(0, mod_byte);\n}"
 
 def write_c(map, output_filename):
     print "begin write_c()"
@@ -215,9 +214,8 @@ def write_c(map, output_filename):
     exact_keys = exact_codes.keys()
     modifier_keys = modifiers.keys()
     map_keys = map.keys()
-    f_c.write(top_str1 % (map["KEY_SHIFT"], map["KEY_CTRL"], map["KEY_ALT"], map["KEY_GUI"]))
+    f_c.write(top_str1)
     f_c.write(top_str2)
-    f_c.write(top_str3)
     # check for modifiers, set modbyte (handle shift after the exact section instead)
     for name in modifier_keys:
         if name in map_keys and name != "KEY_SHIFT":
