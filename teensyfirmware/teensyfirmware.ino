@@ -8,9 +8,9 @@
 
 // #define MOD_HELD        -1  // mod keys don't have chord timers
 
-#define ALREADY_SENT  -2  // >= ALREADY_SENT means currently pressed
-
-// #define NOT_PRESSED     -3  // <= NOT_PRESSED means not currently pressed
+#define ALREADY_SENT  -1  // >= ALREADY_SENT means currently pressed
+#define HELD          -2
+#define NOT_PRESSED   -3  // <= NOT_PRESSED means not currently pressed
 // #define PLEASE_SEND_LAST_STATE -4
 #define NUM_ROWS 3
 #define NUM_COLS 4
@@ -32,6 +32,7 @@ uint32_t state = 0;
 uint32_t last_state = 0;
 bool last_change_was_press; //1 if last change was a press, 0 if last change was a release
 uint32_t state_changes;
+/* uint16_t state_array; */
 
 void setup() {
 // row_pins 
@@ -95,29 +96,17 @@ void scanMatrix(){
   }
 }
 
-void send(uint8_t letter, bool flag_shift, uint8_t mod_byte){
+void send(uint8_t letter, uint8_t mod_byte){
   //but Keyboard uses names, BLE uses usage codes...
-
-  
-  // Serial.print("(");
-  // if (flag_ctrl){
-  //   Serial.print("^");
-  // }
-  // Serial.print(letter);
-  // Serial.print(")");
-  // Serial.println(chord_timer);
-
+  Serial.print("sending:");
+  Serial.println(letter);
   Keyboard.set_key1(letter);
   Keyboard.set_key2(0);
   Keyboard.set_key3(0);
   Keyboard.set_key4(0);
   Keyboard.set_key5(0);
   Keyboard.set_key6(0);
-  
-  if (flag_shift){
-    Keyboard.set_modifier(MODIFIERKEY_SHIFT);
-  }
-  // Keyboard.set_modifier(mod_byte);
+  Keyboard.set_modifier(mod_byte);
   Keyboard.send_now();
   
   delay(50);
@@ -127,9 +116,8 @@ void send(uint8_t letter, bool flag_shift, uint8_t mod_byte){
   Keyboard.set_key4(0);
   Keyboard.set_key5(0);
   Keyboard.set_key6(0);
-  // if (!flag_shift){
-    Keyboard.set_modifier(0);
-  // }
+  //todo consider not releasing modifiers. does it ever matter?
+  Keyboard.set_modifier(0);
   Keyboard.send_now();
 
   chord_timer = ALREADY_SENT;
@@ -169,7 +157,9 @@ void checkForChanges(){
     //reset repeat timers
     repeat_delay_timer = REPEAT_DELAY;
     repeat_period_timer = REPEAT_PERIOD;
+    Serial.print("last: ");
     Serial.println(last_state);
+    Serial.print("state: ");
     Serial.println(state);
   }
 }
