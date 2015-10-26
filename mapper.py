@@ -61,14 +61,15 @@ shiftable_codes = dict( #codes for bluetooth HID, which isn't implemented yet
     KEY_F5=62,       KEY_F6=63,       KEY_F7=64,     KEY_F8=65,   KEY_F9=66,     
     KEY_F10=67,      KEY_F11=68,      KEY_F12=69,    KEY_HOME=74, KEY_PAGE_UP=75, 
     KEY_END=77,      KEY_PAGE_DOWN=78, KEY_RIGHT=79,  KEY_LEFT=80, KEY_DOWN=81,   
-    KEY_UP=82, KEY_ESC=41, KEY_PRINTSCREEN=70, KEY_SCROLL_LOCK=71
+    KEY_UP=82, KEY_ESC=41, KEY_PRINTSCREEN=70, KEY_SCROLL_LOCK=71,
+    KEY_1           =30, KEY_2                                 =31, KEY_3             =32,
+    KEY_4           =33, KEY_5 =34, KEY_6 =35,
+    KEY_7           =36, KEY_8=37 , KEY_9 =38,
+    KEY_0           =39, KEY_DELETE=76
 )  
 # todo sub all nums for names, change format strings
 exact_codes         = dict(
-    KEY_1           =[("KEY_1","")], KEY_2                                 =[("KEY_2","")], KEY_3             =[("KEY_3","")],
-    KEY_4           =[("KEY_4","")], KEY_5                                 =[("KEY_5","")], KEY_6             =[("KEY_6","")],
-    KEY_7           =[("KEY_7","")], KEY_8                                 =[("KEY_8","")], KEY_9             =[("KEY_9","")],
-    KEY_0           =[("KEY_0","")], KEY_MINUS                             =[("KEY_MINUS","")], KEY_EQUAL     =[("KEY_EQUAL","")],
+    KEY_MINUS                             =[("KEY_MINUS","")], KEY_EQUAL     =[("KEY_EQUAL","")],
     KEY_BACKSLASH   = [("KEY_BACKSLASH","")], KEY_SEMICOLON                =[("KEY_SEMICOLON","")], KEY_QUOTE =[("KEY_QUOTE","")],
     KEY_GRAVE       = [("KEY_TILDE","|MODIFIERKEY_SHIFT")], KEY_COMMA      =[("KEY_COMMA","")], KEY_PERIOD    =[("KEY_PERIOD","")],
     KEY_SLASH       = [("KEY_SLASH","")],

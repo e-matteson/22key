@@ -1,0 +1,11 @@
+*~
+\#*#
+*.elf
+*.hex
+*.log
+*.pyc
+*.o
+/keymaps/init_map5.kmap
+/keymaps/dvtest.kmap
+/cruft/Makefile
+/keymaps/init_map1.kmap

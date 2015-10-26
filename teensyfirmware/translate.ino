@@ -23,7 +23,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_5, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
-  if(state == 4194306){		//KEY_DOLLAR
+  if(state == 65538){		//KEY_DOLLAR
     sendOverUSB(KEY_4, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
@@ -55,10 +55,6 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_1, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
-  if(state == 5120){		//KEY_GRAVE
-    sendOverUSB(KEY_TILDE, mod_byte |MODIFIERKEY_SHIFT);
-    return;
-  }
   if(state == 4224){		//KEY_ASTERISK
     sendOverUSB(KEY_8, mod_byte |MODIFIERKEY_SHIFT);
     return;
@@ -75,16 +71,8 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_EQUAL, mod_byte );
     return;
   }
-  if(state == 4104){		//KEY_QUESTION
-    sendOverUSB(KEY_SLASH, mod_byte |MODIFIERKEY_SHIFT);
-    return;
-  }
   if(state == 524352){		//KEY_RIGHT_CURLY
     sendOverUSB(KEY_RIGHT_BRACE, mod_byte |MODIFIERKEY_SHIFT);
-    return;
-  }
-  if(state == 4098){		//KEY_COLON
-    sendOverUSB(KEY_SEMICOLON, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
   if(state == 8208){		//KEY_COMMA
@@ -119,10 +107,6 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_SEMICOLON, mod_byte );
     return;
   }
-  if(state == 2097280){		//KEY_PIPE
-    sendOverUSB(KEY_BACKSLASH, mod_byte |MODIFIERKEY_SHIFT);
-    return;
-  }
   if(state == 4112){		//KEY_QUOTE
     sendOverUSB(KEY_QUOTE, mod_byte );
     return;
@@ -139,36 +123,16 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_BACKSLASH, mod_byte );
     return;
   }
-  if(state == 576){		//KEY_5
-    sendOverUSB(KEY_5, mod_byte );
+  if(state == 4104){		//KEY_QUESTION
+    sendOverUSB(KEY_SLASH, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
-  if(state == 36864){		//KEY_4
-    sendOverUSB(KEY_4, mod_byte );
+  if(state == 5120){		//KEY_GRAVE
+    sendOverUSB(KEY_TILDE, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
-  if(state == 131081){		//KEY_7
-    sendOverUSB(KEY_7, mod_byte );
-    return;
-  }
-  if(state == 2490368){		//KEY_6
-    sendOverUSB(KEY_6, mod_byte );
-    return;
-  }
-  if(state == 9){		//KEY_1
-    sendOverUSB(KEY_1, mod_byte );
-    return;
-  }
-  if(state == 2359296){		//KEY_0
-    sendOverUSB(KEY_0, mod_byte );
-    return;
-  }
-  if(state == 72){		//KEY_3
-    sendOverUSB(KEY_3, mod_byte );
-    return;
-  }
-  if(state == 294912){		//KEY_2
-    sendOverUSB(KEY_2, mod_byte );
+  if(state == 4098){		//KEY_COLON
+    sendOverUSB(KEY_SEMICOLON, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
   if(state == 262145){		//KEY_PLUS
@@ -179,12 +143,8 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_TILDE, mod_byte );
     return;
   }
-  if(state == 131144){		//KEY_9
-    sendOverUSB(KEY_9, mod_byte );
-    return;
-  }
-  if(state == 425984){		//KEY_8
-    sendOverUSB(KEY_8, mod_byte );
+  if(state == 2097280){		//KEY_PIPE
+    sendOverUSB(KEY_BACKSLASH, mod_byte |MODIFIERKEY_SHIFT);
     return;
   }
 
@@ -212,10 +172,6 @@ void translateAndSendState(uint32_t state){
   }
   if(state == 8192){		//KEY_A
     sendOverUSB(KEY_A, mod_byte);
-    return;
-  }
-  if(state == 6291456){		//KEY_PAGE_DOWN
-    sendOverUSB(KEY_PAGE_DOWN, mod_byte);
     return;
   }
   if(state == 1728){		//KEY_PRINTSCREEN
@@ -250,11 +206,11 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_H, mod_byte);
     return;
   }
-  if(state == 65600){		//KEY_K
+  if(state == 4194432){		//KEY_K
     sendOverUSB(KEY_K, mod_byte);
     return;
   }
-  if(state == 65544){		//KEY_J
+  if(state == 524416){		//KEY_J
     sendOverUSB(KEY_J, mod_byte);
     return;
   }
@@ -266,11 +222,11 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_T, mod_byte);
     return;
   }
-  if(state == 524290){		//KEY_W
+  if(state == 4194306){		//KEY_W
     sendOverUSB(KEY_W, mod_byte);
     return;
   }
-  if(state == 65537){		//KEY_V
+  if(state == 65664){		//KEY_V
     sendOverUSB(KEY_V, mod_byte);
     return;
   }
@@ -290,31 +246,35 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_R, mod_byte);
     return;
   }
-  if(state == 1048832){		//KEY_ENTER
-    sendOverUSB(KEY_ENTER, mod_byte);
+  if(state == 2097154){		//KEY_Y
+    sendOverUSB(KEY_Y, mod_byte);
     return;
   }
   if(state == 2097168){		//KEY_X
     sendOverUSB(KEY_X, mod_byte);
     return;
   }
-  if(state == 24){		//KEY_UP
-    sendOverUSB(KEY_UP, mod_byte);
-    return;
-  }
-  if(state == 65538){		//KEY_B
-    sendOverUSB(KEY_B, mod_byte);
-    return;
-  }
-  if(state == 1536){		//KEY_RIGHT
-    sendOverUSB(KEY_RIGHT, mod_byte);
-    return;
-  }
-  if(state == 66048){		//KEY_Z
+  if(state == 8320){		//KEY_Z
     sendOverUSB(KEY_Z, mod_byte);
     return;
   }
-  if(state == 786432){		//KEY_PAGE_UP
+  if(state == 8){		//KEY_C
+    sendOverUSB(KEY_C, mod_byte);
+    return;
+  }
+  if(state == 3){		//KEY_UP
+    sendOverUSB(KEY_UP, mod_byte);
+    return;
+  }
+  if(state == 524290){		//KEY_B
+    sendOverUSB(KEY_B, mod_byte);
+    return;
+  }
+  if(state == 7077888){		//KEY_DELETE
+    sendOverUSB(KEY_DELETE, mod_byte);
+    return;
+  }
+  if(state == 6291456){		//KEY_PAGE_UP
     sendOverUSB(KEY_PAGE_UP, mod_byte);
     return;
   }
@@ -326,11 +286,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_BACKSPACE, mod_byte);
     return;
   }
-  if(state == 12288){		//KEY_HOME
-    sendOverUSB(KEY_HOME, mod_byte);
-    return;
-  }
-  if(state == 3){		//KEY_DOWN
+  if(state == 24){		//KEY_DOWN
     sendOverUSB(KEY_DOWN, mod_byte);
     return;
   }
@@ -338,8 +294,64 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_U, mod_byte);
     return;
   }
-  if(state == 8){		//KEY_C
-    sendOverUSB(KEY_C, mod_byte);
+  if(state == 36864){		//KEY_5
+    sendOverUSB(KEY_5, mod_byte);
+    return;
+  }
+  if(state == 576){		//KEY_4
+    sendOverUSB(KEY_4, mod_byte);
+    return;
+  }
+  if(state == 2129920){		//KEY_7
+    sendOverUSB(KEY_7, mod_byte);
+    return;
+  }
+  if(state == 65){		//KEY_6
+    sendOverUSB(KEY_6, mod_byte);
+    return;
+  }
+  if(state == 2359296){		//KEY_1
+    sendOverUSB(KEY_1, mod_byte);
+    return;
+  }
+  if(state == 9){		//KEY_0
+    sendOverUSB(KEY_0, mod_byte);
+    return;
+  }
+  if(state == 294912){		//KEY_3
+    sendOverUSB(KEY_3, mod_byte);
+    return;
+  }
+  if(state == 72){		//KEY_2
+    sendOverUSB(KEY_2, mod_byte);
+    return;
+  }
+  if(state == 266240){		//KEY_9
+    sendOverUSB(KEY_9, mod_byte);
+    return;
+  }
+  if(state == 520){		//KEY_8
+    sendOverUSB(KEY_8, mod_byte);
+    return;
+  }
+  if(state == 786432){		//KEY_PAGE_DOWN
+    sendOverUSB(KEY_PAGE_DOWN, mod_byte);
+    return;
+  }
+  if(state == 1048832){		//KEY_ENTER
+    sendOverUSB(KEY_ENTER, mod_byte);
+    return;
+  }
+  if(state == 1536){		//KEY_RIGHT
+    sendOverUSB(KEY_RIGHT, mod_byte);
+    return;
+  }
+  if(state == 110592){		//KEY_CAPS_LOCK
+    sendOverUSB(KEY_CAPS_LOCK, mod_byte);
+    return;
+  }
+  if(state == 12288){		//KEY_HOME
+    sendOverUSB(KEY_HOME, mod_byte);
     return;
   }
   if(state == 4194320){		//KEY_TAB
@@ -348,10 +360,6 @@ void translateAndSendState(uint32_t state){
   }
   if(state == 192){		//KEY_LEFT
     sendOverUSB(KEY_LEFT, mod_byte);
-    return;
-  }
-  if(state == 2097154){		//KEY_Y
-    sendOverUSB(KEY_Y, mod_byte);
     return;
   }
   //else unknown combo, or only mods are down
