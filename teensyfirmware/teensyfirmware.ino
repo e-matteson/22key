@@ -198,8 +198,8 @@ uint32_t getState(){
 
 void sendOverUSB(uint32_t key_code, uint8_t mod_byte){
   //but Keyboard uses names, BLE uses usage codes...
-  Serial.print("sending:");
-  Serial.println(key_code);
+  /* Serial.print("sending:"); */
+  /* Serial.println(key_code); */
   Keyboard.set_key1(key_code);
   Keyboard.set_key2(0);
   Keyboard.set_key3(0);
