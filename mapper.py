@@ -65,7 +65,8 @@ shiftable_codes = dict( #codes for bluetooth HID, which isn't implemented yet
     KEY_1           =30, KEY_2                                 =31, KEY_3             =32,
     KEY_4           =33, KEY_5 =34, KEY_6 =35,
     KEY_7           =36, KEY_8=37 , KEY_9 =38,
-    KEY_0           =39, KEY_DELETE=76
+    KEY_0           =39, KEY_DELETE=76,
+    NULL = 0  #for blank spaces in map
 )  
 # todo sub all nums for names, change format strings
 exact_codes         = dict(
@@ -187,7 +188,7 @@ def parse_kmap(filename):
 
 
 ########## structure of .c file
-top_str1 = "void translateAndSendState(uint32_t state){\n"
+top_str1 = "#define NULL 0 \nvoid translateAndSendState(uint32_t state){\n"
 top_str2 = "  //blank out mods except shift, set mod_byte\n  char mod_byte = 0;\n"
 
 if_str_mod1 = "  if(state & 1<<%d){\t\t//%s\n"
