@@ -347,6 +347,10 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(NULL, mod_byte);
     return;
   }
+  if(state == 73){		//KEY_F2
+    sendOverUSB(KEY_F2, mod_byte);
+    return;
+  }
   if(state == 1536){		//KEY_RIGHT
     sendOverUSB(KEY_RIGHT, mod_byte);
     return;

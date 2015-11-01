@@ -1,13 +1,20 @@
 #include <TimerOne.h>
 // maximum values of the countdown timers
 #define CHORD_DELAY    25   
-#define HELD_DELAY     100
-#define DEBOUNCE_DELAY 2
+#define HELD_DELAY     50
+/* #define DEBOUNCE_DELAY 0 */
 #define REPEAT_DELAY   400
 #define REPEAT_PERIOD  15
 
 // units for timers
 #define TIMER_TICK     2083  //microsecs. 2083 is multiple of 48MHz period.
+
+//possible statuses for the status_array
+#define DEBOUNCE_DELAY 4        // newly pressed, might be a bounce
+#define PRESSED -1         // pressed and not sent yet
+#define ALREADY_SENT -2    // sent, don't resend
+#define HELD -3            // sent, but ok to resend
+#define NOT_PRESSED -4     // not currently pressed
 
 //keyboard size
 #define NUM_ROWS 3
@@ -19,14 +26,6 @@
 //using input without pullup as hiZ state
 #define HI_Z INPUT 
 
-//possible statuses for the status_array
-enum status_t{
-  DEBOUNCE,        // newly pressed, might be a bounce (increase delay at end of loop if there's still bounce)
-  PRESSED,         // pressed and not sent yet
-  ALREADY_SENT,    // sent, don't resend
-  HELD,            // sent, but ok to resend
-  NOT_PRESSED,     // not currently pressed
-};
 
 //teensy LC I/O pin numbers
 uint8_t row_pins[NUM_HANDS][NUM_ROWS]= {{3,4,5}, {20, 21,22}};
@@ -37,13 +36,16 @@ int32_t chord_timer;
 int32_t held_timer;
 int32_t repeat_delay_timer;
 int32_t repeat_period_timer;
-int32_t debounce_timer;
 uint32_t standby_timer;
 
-bool pressed_array[NUM_SWITCHES];    //simple boolean values, set by scanMatrix()
-status_t status_array[NUM_SWITCHES]; //used in a state machine for complex behaviors
+//simple boolean values, set by scanMatrix()
+bool pressed_array[NUM_SWITCHES];   
 
-bool is_any_switch_pressed;           //flag used by decrement_timers()
+//used in a state machine for complex behaviors, and used as a debounce timer
+int8_t status_array[NUM_SWITCHES];
+
+//flag used by decrement_timers()
+bool is_any_switch_pressed;
 
 
 void setup() {
@@ -66,7 +68,6 @@ void setup() {
   //initialize timers
   chord_timer = -1;
   held_timer = -1;
-  debounce_timer = -1;
   repeat_delay_timer = REPEAT_DELAY;
   repeat_period_timer = REPEAT_PERIOD;
   Timer1.initialize(TIMER_TICK); //microsecs
@@ -117,55 +118,34 @@ void updateSwitchStatuses(){
   for(uint8_t i=0; i!=NUM_SWITCHES; i++){
     if(!pressed_array[i]){
       // switch is NOT pressed
-      switch(status_array[i]){
+      //todo refactor?
 
-      case NOT_PRESSED:
-      case DEBOUNCE:
-        status_array[i] = NOT_PRESSED;
-        break;
-
-      case ALREADY_SENT:
-      case HELD:
-        //switch was released, and it was already sent previously
-        status_array[i] = NOT_PRESSED;
-        resetInactivityTimers();
-        break;
-
-      case PRESSED:
+      if(status_array[i] == PRESSED){ 
         //switch was quickly tapped and released, and should be sent now
         status_array[i] = PRESSED;
-        chord_timer = 0; //force send
+        chord_timer = 0; //force a send 
         resetInactivityTimers();
-        break;
+      }
+      else if(status_array[i] == ALREADY_SENT || status_array[i] == HELD){
+        status_array[i] = NOT_PRESSED;
+        resetInactivityTimers();
+      }
+      else {
+        status_array[i] = NOT_PRESSED;
       }
     }
     else if(pressed_array[i]){
       // switch IS pressed
       is_any_switch_pressed = 1;
-      switch(status_array[i]){
-
-      case ALREADY_SENT:
-      case HELD:
-      case PRESSED:
-        break;
-
-      case NOT_PRESSED:
+      if(status_array[i] == NOT_PRESSED){
         //maybe it's a new press, debounce it first
-        status_array[i] = DEBOUNCE;
-        /* debounce_timer = DEBOUNCE_DELAY; */
-        break;
-
-      case DEBOUNCE:
-        //using the debounce timer makes chording unreliable - todo why?
-        /* if(!debounce_timer){ */
-          //new press
-          status_array[i] = PRESSED;
-          chord_timer = CHORD_DELAY;
-          //could just stay at 0, but lets make timers be -1 when not in use
-          /* debounce_timer = -1; */
-          resetInactivityTimers();
-        /* } */
-        break;
+        status_array[i] = DEBOUNCE_DELAY;
+      }
+      else if(status_array[i] == 0){
+        // debounce done, its a new press
+        status_array[i] = PRESSED;
+        chord_timer = CHORD_DELAY;
+        resetInactivityTimers();
       }
     }
   }
@@ -242,9 +222,11 @@ void decrement_timers(){
   if(held_timer > 0) {
     held_timer--;
   }
-  /* if(debounce_timer > 0) { */
-  /*   debounce_timer--; */
-  /* } */
+  for(uint8_t i = 0; i != NUM_SWITCHES; i++){
+    if(status_array[i] > 0){
+      status_array[i]--;
+    }
+  }
   if (is_any_switch_pressed){ 
     if (repeat_delay_timer > 0){
       //countdown from REPEAT_DELAY to 0
