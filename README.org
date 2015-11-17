@@ -1,150 +1,34 @@
-***22key
+* 22key
 
 Firmware and keymapping tools for a chording keyboard with 22 keys.
 It uses a teensy LC microcontroller.
 
+Keymaps are represented with ascii art in =.kmap= files. Periods are unpressed switches and asterisks are pressed switches. =dvorak2.kmap= is the only complete, usable keymap. An emacs mode providing syntax highlighting for kmap files is available in =kmap.el=.
 
-Keymaps are represented with ascii art in .kmap files. Periods are unpressed switches and asterisks are pressed switches. dvorak2.kmap is the only complete, usable keymap.
-mapper.py conv
+=mapper.py= converts kmap files to c code, in =translate.ino=, that runs on the teensy.
+
+=analyze_logs.py= can generate optimized keymaps from a corpus using simulated annealing and list common n-grams. The optimization doesn't work very well, and the keymap format it outputs is slightly out-of-date.
 
 Unfinished.
 
 
 ** BUGS / LIMITATIONS
-*** assumes modifiers are mapped to only a single switch. Otherwise, it will pick one of the specified switch and ignore the others.
-*** can't send a sustained keypress - so it's impossible to ctrl-click, for example
-*** you can't map multiple chords to the same letter/macro
+- it assumes modifiers are mapped to only a single switch. Otherwise, it will pick one of the specified switch and ignore the others.
+- it can't send a sustained keypress - so it's impossible to ctrl-click, for example
+- you can't map multiple chords to the same letter/macro
 
 ** TODO 
-
 *** add bluetooth 
-**** usb/Keyboard uses key names, BLEfriend uses HID codes (right?)
-  * figure out best way to handle both.
-
-*** this translate.c generation is terrible. figure out how to make it work with only preprocessor directives in a translate.h
-  * sounds great, except you can't have a variable set of keys/macros totally controlled by the kmap. can change the binding, but need a hard-coded conditional in the c.
+- usb/Keyboard uses key names, BLEfriend uses HID codes (right?). figure out best way to handle both.
 
 *** better mount.  ideas:
-**** flat wood top, cardboard buttresses underneath fit to leg curve
-**** battery on strap - more easily replacable
-**** innertube chunk of strap for stretchiness
-**** maybe innertube over electronics?
-**** drill holes through wood, "stitch" to strap
+- flat wood top, cardboard buttresses underneath fit to leg curve
+- battery on strap - more easily replacable
+- innertube chunk of strap for stretchiness
+- maybe innertube over electronics?
+- 3d printed frame for the switches
 
 ** Everything below here is probably outdated  
-don't need to do anything fancy with ctrl. Can release it in the middle of shortcuts, C-x C-s == C-x-s
-
-*** NEW IDEAS 
-
-Don't need a chord timer for each key, just one that restarts whenever the first key is newly pressed or released after a send. When that timer runs out, the current state is sent.
-
-Might want different delays for after press and after release. And we need to remember which (press/release) happened last, because...
-
-Keys that are quickly pressed and released before the press-timer runs out should be sent. hmm.
-**** When press timer is > 0: if any key released, send last state from before the release
-**** When release timer is > 0: if any key pressed, restart as press timer
-
-if (old ^ new) changed
-if ((old ^ new) & new) something pressed, else nothing pressed
-if ((old ^ new) & old) something released, else nothing released
-
-one signed char for timer, seperate reset constants, flag for last pressed or released
-what if both pressed and released in one scan? treat as just a press
-
-*** MOD KEY EXPLANATION 
-
-BUT THERE'S NO RELATIVE UP/DOWN COMMAND, JUST SEND LIST OF CURRENTLY PRESSED KEYS
-
-Mods don't have chord timers. Either they're sent immediately, or
-their entries are set to MOD_HELD when pressed.
-
-**** For ctrl and alt: 
-
-  Send 'ctrl down' as soon as ctrl is pressed.
-  Send 'ctrl up' as soon as ctrl is released. (and same for alt)
-
-**** For esc: TODO 
-
-  Should it behave like a normal keyboard?
-  Or can meta be made holdable/reuseable, like ctrl and alt?
-
-**** For shift: 
-
-  Set chord_timer[i] to MOD_HELD when pressed.
-  Use when translating matrix to key after some other chord timer runs out.
-  Don't send directly - shift pairs may not match dvorak's pairs.
-  Set chord_timer[i] to NOT_PRESSED when released.
-
-
-*** Translation ideas 
-
-Need to associate switch matrix states with usage codes. Maybe with key names in between, for clarity. 
-
-**** binary, indexing into usage code array 
-
-1. represent current state as 22bit binary value (in int32 or whatever).
-2. use value to index into char[?] array containing corresponding usage codes.
-
-Problem: array is huge and sparse. worst case is char[2^22], no go.
-
-
-**** binary, else-if 
-
-1. represent current state as 22bit binary value (in int32 or whatever).
-2. have giant list of `#define KEYNAME 0xState`
-3. have giant chain of `else if(state == KEYNAME){ send(usage_code);}`
-
-
-**** binary, generated else-if 
-
-1. Write python to:
-
-  1. parse a nice keymap config file
-  
-  2. construct translate function, output to translate.c: (pass pointer if needed)
-  
-   ```c
-   char translate(uint32_t state, unsigned char usage_codes,  ){
-   	if(state == 0xMatrix){
-	   return 0xUsageCode;
-	}
-	if(state ==  ...
-   }
-   ```
-2. in main file, `#include <translate.h>`
-
-**** Benefits: 
-
-**** no big lists of #defines
-**** little stack usage, compared to arrays or enums.
-**** easier to re-map than if manually maintained
-
-**** Drawbacks: 
-
-**** c code is less readable without accompanying python script
-
-
-
-**** Notes: 
-
-USB-HID spec has requirements this probably won't meet, especially for boot keyboards.
-I want to use bluefruit for Tx only...
-
-Key numbering in original mapper.py:
-#     21 20 19 18         17 16 15 14
-#     13 12 11 10         9  8  7  6
-#           5  4  3    2  1  0
-
-Key numbering in optimizer:
-#     7  5  3  1          9  11 13 15
-#     6  4  2  0          8  10 12 14    
-#           18 17 16   19 20 21
-
-Key numbering in layout_printer:
-#     0  1  2  3          4  5  6  7
-#     8  9  10 11         12 13 14 15
-#           16 17 18   19 20 21 
-
 
 *** Layout Optimization
 
@@ -152,21 +36,18 @@ Key numbering in layout_printer:
 2. pick layout metrics
 3. use simulated annealing to determine best mapping between chords and characters
 
-**** Metric
-
-Prefer:
-**** min number of switches 
-**** min number switch changes between common digrams/trigrams
-**** index/middle over pinky/ring
-**** consecutive finger runs - same row, or monotonic
-**** balanced hand use - sustained switches, or new presses
-
-
 remove shifts and holds from corpus? all to lowercase
 
-how to deal with physical shift:
-**** upper/lower case letters have to stay together
-**** but if others aren't restricted... how to handle swaps?
+**** how to deal with physical shift:
+upper/lower case letters have to stay together
+but if others aren't restricted... how to handle swaps?
  pick two chords to swap. if either is in locked_pairs, swap both shifted and unshifted. else, randomly pick one of those to swap.
+
+**** Metric. Prefer:
+- min number of switches 
+- min number switch changes between common digrams/trigrams
+- index/middle over pinky/ring
+- consecutive finger runs - same row, or monotonic
+- balanced hand use - sustained switches, or new presses
 
 
