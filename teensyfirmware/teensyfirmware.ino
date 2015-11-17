@@ -1,8 +1,7 @@
 #include <TimerOne.h>
 // maximum values of the countdown timers
-#define CHORD_DELAY    25   
+#define CHORD_DELAY    27   
 #define HELD_DELAY     50
-/* #define DEBOUNCE_DELAY 0 */
 #define REPEAT_DELAY   400
 #define REPEAT_PERIOD  15
 
@@ -10,7 +9,7 @@
 #define TIMER_TICK     2083  //microsecs. 2083 is multiple of 48MHz period.
 
 //possible statuses for the status_array
-#define DEBOUNCE_DELAY 4        // newly pressed, might be a bounce
+#define DEBOUNCE_DELAY 7        // newly pressed, might be a bounce
 #define PRESSED -1         // pressed and not sent yet
 #define ALREADY_SENT -2    // sent, don't resend
 #define HELD -3            // sent, but ok to resend
@@ -94,7 +93,6 @@ void loop() {
 
 void scanMatrix(){
   int i = 0;
-  bool pressed = 0;
   for (uint8_t h = 0; h != NUM_HANDS; h++){
     for (uint8_t c = 0; c != NUM_COLS; c++){
       pinMode(col_pins[h][c], OUTPUT);
@@ -122,8 +120,11 @@ void updateSwitchStatuses(){
 
       if(status_array[i] == PRESSED){ 
         //switch was quickly tapped and released, and should be sent now
-        status_array[i] = PRESSED;
-        chord_timer = 0; //force a send 
+
+        // next line is redundant
+        /* status_array[i] = PRESSED; */
+        //force a send during this loop iteration
+        chord_timer = 0;
         resetInactivityTimers();
       }
       else if(status_array[i] == ALREADY_SENT || status_array[i] == HELD){
@@ -138,7 +139,9 @@ void updateSwitchStatuses(){
       // switch IS pressed
       is_any_switch_pressed = 1;
       if(status_array[i] == NOT_PRESSED){
-        //maybe it's a new press, debounce it first
+        //maybe it's a new press, debounce it first.
+        //status_array will be used as a timer that counts down
+        //from DEBOUNCE_DELAY to 0
         status_array[i] = DEBOUNCE_DELAY;
       }
       else if(status_array[i] == 0){

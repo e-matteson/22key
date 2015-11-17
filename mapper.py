@@ -70,7 +70,7 @@ shiftable_codes = dict( #codes for bluetooth HID, which isn't implemented yet
 )  
 # todo sub all nums for names, change format strings
 exact_codes         = dict(
-    KEY_MINUS                             =[("KEY_MINUS","")], KEY_EQUAL     =[("KEY_EQUAL","")],
+    KEY_MINUS       =[("KEY_MINUS","")], KEY_EQUAL     =[("KEY_EQUAL","")],
     KEY_BACKSLASH   = [("KEY_BACKSLASH","")], KEY_SEMICOLON                =[("KEY_SEMICOLON","")], KEY_QUOTE =[("KEY_QUOTE","")],
     KEY_GRAVE       = [("KEY_TILDE","|MODIFIERKEY_SHIFT")], KEY_COMMA      =[("KEY_COMMA","")], KEY_PERIOD    =[("KEY_PERIOD","")],
     KEY_SLASH       = [("KEY_SLASH","")],
@@ -89,6 +89,14 @@ exact_codes         = dict(
     KEY_RIGHT_BRACE     =[("KEY_RIGHT_BRACE","")],
     KEY_LEFT_CURLY     =[("KEY_LEFT_BRACE","|MODIFIERKEY_SHIFT")],
     KEY_RIGHT_CURLY     =[("KEY_RIGHT_BRACE","|MODIFIERKEY_SHIFT")],
+    # MACRO_ST            =[("KEY_S", ""), ("KEY_T", "")],
+    MACRO_NT            =[("KEY_N", ""), ("KEY_T", "")],
+    MACRO_TH            =[("KEY_T", ""), ("KEY_H", "")],
+    MACRO_NG            =[("KEY_N", ""), ("KEY_G", "")],
+    MACRO_SWITCH_BUFFER =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_B", "")],
+    MACRO_COMPILE   =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_C", "")],
+    MACRO_HELM_MINI =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_H", "")],
+    MACRO_RUN       =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_R", "")],
     MACRO_BRACE     =[("KEY_LEFT_BRACE",""),("KEY_RIGHT_BRACE",""),("KEY_LEFT","")],
     MACRO_CURLY     =[("KEY_LEFT_BRACE","|MODIFIERKEY_SHIFT"), ("KEY_RIGHT_BRACE","|MODIFIERKEY_SHIFT"), ("KEY_LEFT","")],
     MACRO_PAREN     =[("KEY_9","|MODIFIERKEY_SHIFT"), ("KEY_0","|MODIFIERKEY_SHIFT"),("KEY_LEFT","")])
