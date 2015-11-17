@@ -2,14 +2,16 @@
 import re
 from math import log
 
+# TODO this assumes the ordering of bits in an int is the same on the teensy
+#      and wherever this python script is running. that's not ideal.
+# 
+# TODO remove support for deprecated "shifted" commands from the parser
+
+
 # Format of .kmap file:
 # 
-# lines beginning with # are ignored
+# lines beginning with // are ignored
 # period is not-pressed, and any alphanumeric character is pressed
-# TODO deal with mod recognition
-# TODO figure out mapping between cfg file bit order and
-# scanMatrix bit order, and conversion to-from int on both
-# attiny and x86. Should both be little-endian at least ...
 # 
 # cfg file bit order is (LSB -> MSB):
 # [22-31 zero]
@@ -25,50 +27,37 @@ from math import log
 #     13 16 19 22         1  4  7  10
 #           17 20 23   5  8  11
 #
-#
+
 bit_order =  range(31, 23, -1) + [3, 10, 18, 4, 11, 19, 5, 12, 20, 31, 13, 21, 0, 6, 14, 1, 7, 15, 2, 8, 16, 31, 9, 17]
 bit_order = [31-b for b in bit_order]
-# bit_order =  [17, 9, 31, 16, 8, 2, 15, 7, 1, 14, 6, 0, 21, 13, 31, 20, 12, 5, 19, 11, 4, 18, 10, 3]
-#[31, 30, 29, 28, 27, 26, 25, 24, 17, 9,  ** 31, 16, 8,  2,  15, 7,  1,  14, 6,  0,  21, 13, 31, 20, 12, 5,  19, 11, 4,  18, 10, 3]
-#[0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  ** 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-#[31, 30, 29, 28, 27, 26, 25, 24, 23, 22, ** 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,  0]
-#----------------------------------------------------------------------------------------------------------------------------------
-#[0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  ** 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 14
 PADWIDTH = 10; #22 keys, uint32
 
 ########## HID usage code / macro dictionaries
 
-# shiftable_codes = dict( #codes for bluetooth HID, which isn't implemented yet
-#     key_a=4,         key_b=5,         key_c=6,       key_d=7,     key_e=8,       
-#     key_f=9,         key_g=10,        key_h=11,      key_i=12,    key_j=13,      
-#     key_k=14,        key_l=15,        key_m=16,      key_n=17,    key_o=18,      
-#     key_p=19,        key_q=20,        key_r=21,      key_s=22,    key_t=23,      
-#     key_u=24,        key_v=25,        key_w=26,      key_x=27,    key_y=28,      
-#     key_z=29,        key_enter=40,    key_delete=42, key_tab=43,  key_space=44,  
-#     key_capslock=57, key_f1=58,       key_f2=59,     key_f3=60,   key_f4=61,     
-#     key_f5=62,       key_f6=63,       key_f7=64,     key_f8=65,   key_f9=66,     
-#     key_f10=67,      key_f11=68,      key_f12=69,    key_home=74, key_pageup=75, 
-#     key_end=77,      key_pagedown=78, key_right=79,  key_left=80, key_down=81,   
-#     key_up=82)
-shiftable_codes = dict( #codes for bluetooth HID, which isn't implemented yet
-    KEY_A=4,         KEY_B=5,         KEY_C=6,       KEY_D=7,     KEY_E=8,       
-    KEY_F=9,         KEY_G=10,        KEY_H=11,      KEY_I=12,    KEY_J=13,      
-    KEY_K=14,        KEY_L=15,        KEY_M=16,      KEY_N=17,    KEY_O=18,      
-    KEY_P=19,        KEY_Q=20,        KEY_R=21,      KEY_S=22,    KEY_T=23,      
-    KEY_U=24,        KEY_V=25,        KEY_W=26,      KEY_X=27,    KEY_Y=28,      
-    KEY_Z=29,        KEY_ENTER=40,    KEY_BACKSPACE=42, KEY_TAB=43,  KEY_SPACE=44,  
-    KEY_CAPS_LOCK=57, KEY_F1=58,       KEY_F2=59,     KEY_F3=60,   KEY_F4=61,     
-    KEY_F5=62,       KEY_F6=63,       KEY_F7=64,     KEY_F8=65,   KEY_F9=66,     
-    KEY_F10=67,      KEY_F11=68,      KEY_F12=69,    KEY_HOME=74, KEY_PAGE_UP=75, 
-    KEY_END=77,      KEY_PAGE_DOWN=78, KEY_RIGHT=79,  KEY_LEFT=80, KEY_DOWN=81,   
-    KEY_UP=82, KEY_ESC=41, KEY_PRINTSCREEN=70, KEY_SCROLL_LOCK=71,
-    KEY_1           =30, KEY_2                                 =31, KEY_3             =32,
-    KEY_4           =33, KEY_5 =34, KEY_6 =35,
-    KEY_7           =36, KEY_8=37 , KEY_9 =38,
-    KEY_0           =39, KEY_DELETE=76,
-    NULL = 0  #for blank spaces in map
+# if shift is pressed at the same time as the chord for any of these keys, both
+# the shift and the key will be sent.
+shiftable_codes   = dict( #codes for bluetooth HID, which isn't implemented yet
+    KEY_A         = 4,         KEY_B=5,         KEY_C=6,       KEY_D=7,     KEY_E=8,       
+    KEY_F         = 9,         KEY_G=10,        KEY_H=11,      KEY_I=12,    KEY_J=13,      
+    KEY_K         = 14,        KEY_L=15,        KEY_M=16,      KEY_N=17,    KEY_O=18,      
+    KEY_P         = 19,        KEY_Q=20,        KEY_R=21,      KEY_S=22,    KEY_T=23,      
+    KEY_U         = 24,        KEY_V=25,        KEY_W=26,      KEY_X=27,    KEY_Y=28,      
+    KEY_Z         = 29,        KEY_ENTER=40,    KEY_BACKSPACE=42, KEY_TAB=43,  KEY_SPACE=44,
+    KEY_CAPS_LOCK = 57, KEY_F1=58,       KEY_F2=59,     KEY_F3=60,   KEY_F4=61,     
+    KEY_F5        = 62,       KEY_F6=63,       KEY_F7=64,     KEY_F8=65,   KEY_F9=66,     
+    KEY_F10       = 67,      KEY_F11=68,      KEY_F12=69,    KEY_HOME=74, KEY_PAGE_UP=75, 
+    KEY_END       = 77,      KEY_PAGE_DOWN=78, KEY_RIGHT=79,  KEY_LEFT=80, KEY_DOWN=81,   
+    KEY_UP        = 82, KEY_ESC=41, KEY_PRINTSCREEN=70, KEY_SCROLL_LOCK=71,
+    KEY_1         = 30, KEY_2                                 =31, KEY_3             =32,
+    KEY_4         = 33, KEY_5 =34, KEY_6 =35,
+    KEY_7         = 36, KEY_8=37 , KEY_9 =38,
+    KEY_0         = 39, KEY_DELETE=76,
+    NULL          = 0  #for blank spaces in map
 )  
-# todo sub all nums for names, change format strings
+
+
+# if shift is pressed at the same time as the chord for any of these keys, the
+# chord will not be recognized and nothing will be sent.
 exact_codes         = dict(
     KEY_MINUS       =[("KEY_MINUS","")], KEY_EQUAL     =[("KEY_EQUAL","")],
     KEY_BACKSLASH   = [("KEY_BACKSLASH","")], KEY_SEMICOLON                =[("KEY_SEMICOLON","")], KEY_QUOTE =[("KEY_QUOTE","")],
@@ -196,7 +185,7 @@ def parse_kmap(filename):
     return (map, shift_switch_num)
 
 
-########## structure of .c file
+########## structure of c file
 top_str1 = "#define NULL 0 \nvoid translateAndSendState(uint32_t state){\n"
 top_str2 = "  //blank out mods except shift, set mod_byte\n  char mod_byte = 0;\n"
 
@@ -267,6 +256,8 @@ def write_c(map, output_filename):
 
 (map, shift_switch_num) = parse_kmap("keymaps/dvorak2.kmap")
 write_c(map, 'teensyfirmware/translate.ino')
+
+
 
 
 # f1		f2		f3		f4		
