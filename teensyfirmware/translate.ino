@@ -68,11 +68,11 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_T, mod_byte );
     return;
   }
-  if(state == 4784128){		//MACRO_SWITCH_BUFFER
+  if(state == 6291456){		//MACRO_HELM_IMENU
     sendOverUSB(KEY_SPACE, mod_byte );
     sendOverUSB(KEY_O, mod_byte );
     sendOverUSB(KEY_Z, mod_byte );
-    sendOverUSB(KEY_B, mod_byte );
+    sendOverUSB(KEY_I, mod_byte );
     return;
   }
   if(state == 4104){		//KEY_ASTERISK
@@ -139,7 +139,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_SEMICOLON, mod_byte );
     return;
   }
-  if(state == 598016){		//MACRO_HELM_MINI
+  if(state == 786432){		//MACRO_HELM_MINI
     sendOverUSB(KEY_SPACE, mod_byte );
     sendOverUSB(KEY_O, mod_byte );
     sendOverUSB(KEY_Z, mod_byte );
@@ -318,7 +318,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_DELETE, mod_byte);
     return;
   }
-  if(state == 786432){		//KEY_PAGE_UP
+  if(state == 598016){		//KEY_PAGE_UP
     sendOverUSB(KEY_PAGE_UP, mod_byte);
     return;
   }
@@ -378,7 +378,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_8, mod_byte);
     return;
   }
-  if(state == 6291456){		//KEY_PAGE_DOWN
+  if(state == 4784128){		//KEY_PAGE_DOWN
     sendOverUSB(KEY_PAGE_DOWN, mod_byte);
     return;
   }
@@ -390,11 +390,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(NULL, mod_byte);
     return;
   }
-  if(state == 73){		//KEY_F2
-    sendOverUSB(KEY_F2, mod_byte);
-    return;
-  }
-  if(state == 1536){		//KEY_RIGHT
+  if(state == 584){		//KEY_RIGHT
     sendOverUSB(KEY_RIGHT, mod_byte);
     return;
   }
@@ -410,7 +406,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_TAB, mod_byte);
     return;
   }
-  if(state == 192){		//KEY_LEFT
+  if(state == 73){		//KEY_LEFT
     sendOverUSB(KEY_LEFT, mod_byte);
     return;
   }

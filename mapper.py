@@ -96,6 +96,7 @@ exact_codes         = dict(
     MACRO_SWITCH_BUFFER =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_B", "")],
     MACRO_COMPILE   =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_C", "")],
     MACRO_HELM_MINI =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_H", "")],
+    MACRO_HELM_IMENU =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_I", "")],
     MACRO_RUN       =[("KEY_SPACE", ""), ("KEY_O", ""), ("KEY_Z", ""), ("KEY_R", "")],
     MACRO_BRACE     =[("KEY_LEFT_BRACE",""),("KEY_RIGHT_BRACE",""),("KEY_LEFT","")],
     MACRO_CURLY     =[("KEY_LEFT_BRACE","|MODIFIERKEY_SHIFT"), ("KEY_RIGHT_BRACE","|MODIFIERKEY_SHIFT"), ("KEY_LEFT","")],
