@@ -1,4 +1,4 @@
-#define NULL 0 
+#define BLANK 0 
 void translateAndSendState(uint32_t state){
   //blank out mods except shift, set mod_byte
   char mod_byte = 0;
@@ -206,7 +206,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_E, mod_byte);
     return;
   }
-  if(state == 1){		//KEY_G
+  if(state == 262146){		//KEY_G
     sendOverUSB(KEY_G, mod_byte);
     return;
   }
@@ -222,7 +222,7 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_PRINTSCREEN, mod_byte);
     return;
   }
-  if(state == 262146){		//KEY_D
+  if(state == 1){		//KEY_D
     sendOverUSB(KEY_D, mod_byte);
     return;
   }
@@ -386,12 +386,12 @@ void translateAndSendState(uint32_t state){
     sendOverUSB(KEY_ENTER, mod_byte);
     return;
   }
-  if(state == 0){		//NULL
-    sendOverUSB(NULL, mod_byte);
-    return;
-  }
   if(state == 584){		//KEY_RIGHT
     sendOverUSB(KEY_RIGHT, mod_byte);
+    return;
+  }
+  if(state == 0){		//BLANK
+    sendOverUSB(BLANK, mod_byte);
     return;
   }
   if(state == 110592){		//KEY_CAPS_LOCK
