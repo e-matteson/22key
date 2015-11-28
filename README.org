@@ -9,6 +9,8 @@ Keymaps are represented with ascii art in =.kmap= files. Periods are unpressed s
 
 =analyze_logs.py= can generate optimized keymaps from a corpus using simulated annealing and list common n-grams. The optimization doesn't work very well, and the keymap format it outputs is slightly out-of-date.
 
+[[https://cloud.githubusercontent.com/assets/7717625/11450394/376b944e-956c-11e5-9df8-5eeb21d6dc89.jpg]]
+
 Unfinished.
 
 
