@@ -3,15 +3,16 @@
 Firmware and keymapping tools for a chording keyboard with 22 keys.
 It uses a teensy LC microcontroller.
 
-Keymaps are represented with ascii art in =.kmap= files. Periods are unpressed switches and asterisks are pressed switches. =dvorak2.kmap= is the only complete, usable keymap. An emacs mode providing syntax highlighting for kmap files is available in =kmap.el=.
+Keymaps are represented with ascii art in =*.kmap= files. Periods are unpressed switches and asterisks are pressed switches. =dvorak2.kmap= is the only complete, usable keymap. An emacs mode providing syntax highlighting for kmap files is available in =kmap.el=.
 
 =mapper.py= converts kmap files to c code, in =translate.ino=, that runs on the teensy.
 
-=analyze_logs.py= can generate optimized keymaps from a corpus using simulated annealing and list common n-grams. The optimization doesn't work very well, and the keymap format it outputs is slightly out-of-date.
+=analyze_logs.py= can list common n-grams in a corpus and generate keymaps from the corpus using stochastic optimization. (This was inspired by the work of Martin Krzywinski.) The optimization doesn't work very well, and the keymap format it outputs is no longer compatible with =mapper.py=.
+
+Unfinished.
 
 [[https://cloud.githubusercontent.com/assets/7717625/11450394/376b944e-956c-11e5-9df8-5eeb21d6dc89.jpg]]
 
-Unfinished.
 
 
 ** BUGS / LIMITATIONS
@@ -24,9 +25,8 @@ Unfinished.
 - usb/Keyboard uses key names, BLEfriend uses HID codes (right?). figure out best way to handle both.
 
 *** better mount.  ideas:
-- flat wood top, cardboard buttresses underneath fit to leg curve
+- flat wood top, cardboard buttresses underneath fit to leg 
 - battery on strap - more easily replacable
-- innertube chunk of strap for stretchiness
 - maybe innertube over electronics?
 - 3d printed frame for the switches
 
