@@ -79,6 +79,7 @@ def get_corpus(filename, ngram_lengths, categories=[], debug_corpus=[], use_dict
         
     freqs = tuple(count_freq(corpus, n) for n in ngram_lengths)
 
+    print_table(freqs[0])
     # optionally filter
     if categories:
         freqs = tuple(filter_freqs(f, [category_dict[c] for c in categories]) for f in freqs)
@@ -334,13 +335,13 @@ def swap(layout_bar, locked_pairs, num_to_swap):
             layout_foo[chords[i]][i_shifted] = layout_foo[chords[j]][j_shifted]
             layout_foo[chords[j]][j_shifted] = tmp
     return layout_foo
-            
+
 def calculate_cost(layout, freq1_dict, freq3_dict, weight):
     cost = 0
     num_right = 0
     num_left = 0
     chords = layout.keys()
-    
+
     # single char metrics
     for chord in chords:
         # check number of switches
@@ -361,7 +362,7 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
                 num_left += total_freq
             if is_weak(switch):
                 cost +=  total_freq * weight.weak_finger
-        
+
     cost += abs(num_right - 0.5) * weight.hand_balance
     # multiple char metrics
     chord_lookup = make_reverse_layout(layout)
@@ -379,7 +380,7 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
         #for now, weight both transitions in the triad equally
         # cost += sum(num_changed_list) * freq3_dict[triad] * weight.num_switch_changes
         #replace with num presses - this old version counted releases too
-        
+
         # list of keys newly pressed for each chord
         pressed = [list(chord_seq[0])] + [list(set(chord_seq[i+1]) - set(chord_seq[i])) for i in range(len(chord_seq)-1)]
         # remove empty sub-lists (transitions with only releases)
@@ -395,7 +396,7 @@ def calculate_cost(layout, freq1_dict, freq3_dict, weight):
                 cost += row * freq3_dict[triad] * weight.row_change
     return cost
 
-    
+
 def optimize(initial_layout, freq1, freq3, weight, heats, locked_pairs, iterations):
     cost = calculate_cost(initial_layout, freq1, freq3, weight)
     layout = deepcopy(initial_layout)
@@ -407,10 +408,10 @@ def optimize(initial_layout, freq1, freq3, weight, heats, locked_pairs, iteratio
         print iter
         new_layout = swap(layout, locked_pairs, 2)
         new_cost = calculate_cost(new_layout, freq1, freq3, weight)
-        
+
         if iter == heats[0][0]:
             heats.pop(0)
-            
+
         #short circuiting for speed if p is 0
         if (new_cost <= cost) or (heats[0][1] and (random.random() < heats[0][1])): 
             # print "accepted!"
@@ -480,8 +481,14 @@ def single_optimizer_run():
     run_optimizer("mycorpus.txt", "mapTEST.kmp", 100, heats1, w1)
     # run_optimizer("logkeys.log", "map6.kmp", 10**6, heats1, w1)
     
-(freq1,freq2, freq3) = get_corpus("mycorpus.txt", [1,2,3], ["nonmods"], use_dict=False)
-print_ngram_image("map3.kmp", freq2)
+# (freq1,freq2, freq3) = get_corpus("logs/mycorpus.txt", [1,2,3], ["nonmods"], use_dict=False)
+(freq1,freq2, freq3) = get_corpus("logs/logkeys.log", [1,2,3], ["nonmods"], use_dict=False)
+# print_ngram_image("map3.kmp", freq2)
+
+
+
+
+
 
 # print freq3
 
